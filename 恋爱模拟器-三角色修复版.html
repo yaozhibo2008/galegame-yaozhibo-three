@@ -1,0 +1,2121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b0e1c">
+<title>恋爱模拟器 · 选角大厅</title>
+<style>
+/* ==================================================================
+   全局基础
+   ================================================================== */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",sans-serif;
+  background:#0b0e1c;color:#fff;overflow:hidden;
+  -webkit-font-smoothing:antialiased;overscroll-behavior:none;
+}
+button{font-family:inherit;}
+
+/* ==================================================================
+   选角大厅
+   ================================================================== */
+#lobby{
+  position:fixed;inset:0;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch;z-index:40;
+  background:
+    radial-gradient(80% 55% at 12% -5%, rgba(120,170,255,.30), transparent 62%),
+    radial-gradient(70% 55% at 102% 18%, rgba(255,130,190,.26), transparent 62%),
+    radial-gradient(95% 65% at 50% 112%, rgba(150,120,255,.30), transparent 62%),
+    linear-gradient(180deg,#101429 0%,#0b0e1c 55%,#080a14 100%);
+}
+#lobby.on{display:block;}
+#lobby::before{
+  content:"";position:fixed;inset:-25%;pointer-events:none;
+  background:
+    radial-gradient(circle at 22% 32%, rgba(140,180,255,.35), transparent 42%),
+    radial-gradient(circle at 78% 62%, rgba(255,140,200,.30), transparent 42%),
+    radial-gradient(circle at 55% 12%, rgba(180,160,255,.26), transparent 40%);
+  filter:blur(46px);
+  animation:lobbyFloat 18s ease-in-out infinite alternate;
+}
+@keyframes lobbyFloat{
+  0%{transform:translate(-3%,-2%) scale(1);}
+  100%{transform:translate(3%,3%) scale(1.1);}
+}
+#lobby::after{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.5;
+  background-image:
+    radial-gradient(1.6px 1.6px at 12% 18%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 78% 12%, #cfe0ff, transparent),
+    radial-gradient(1.2px 1.2px at 34% 72%, #fff, transparent),
+    radial-gradient(1.6px 1.6px at 88% 62%, #ffd9ef, transparent),
+    radial-gradient(1.2px 1.2px at 62% 86%, #fff, transparent),
+    radial-gradient(1.4px 1.4px at 8% 88%, #cbb6ff, transparent),
+    radial-gradient(1.2px 1.2px at 46% 34%, #fff, transparent);
+  animation:twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes twinkle{from{opacity:.25;}to{opacity:.75;}}
+
+.lobby-inner{
+  position:relative;z-index:2;min-height:100%;
+  padding:calc(34px + env(safe-area-inset-top)) 18px calc(30px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;text-align:center;
+}
+.lobby-head{animation:lobbyRise .7s cubic-bezier(.2,.8,.3,1) both;}
+.lobby-badge{
+  display:inline-block;font-size:10px;letter-spacing:.42em;color:#93a8d6;
+  padding:5px 15px 5px 18px;border-radius:99px;
+  border:1px solid rgba(147,168,214,.32);background:rgba(147,168,214,.08);
+  margin-bottom:16px;
+}
+.lobby-title{
+  font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:.16em;line-height:1.2;
+  background:linear-gradient(115deg,#d5e4ff 8%,#ffd3e8 48%,#cbb6ff 92%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 6px 24px rgba(160,150,255,.35));
+}
+.lobby-subtitle{margin-top:12px;font-size:12.5px;letter-spacing:.16em;color:#8891b4;}
+
+.cards{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:16px;width:100%;max-width:700px;
+}
+@media (max-width:560px){
+  .cards{grid-template-columns:1fr;max-width:380px;gap:14px;}
+}
+
+.char-card{
+  position:relative;overflow:hidden;cursor:pointer;text-align:left;color:#fff;
+  display:flex;flex-direction:column;align-items:center;
+  padding:22px 18px 18px;border-radius:24px;
+  background:rgba(255,255,255,.055);
+  border:1px solid rgba(255,255,255,.12);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 18px 44px rgba(0,0,0,.42);
+  transition:transform .26s cubic-bezier(.2,.8,.3,1),border-color .26s,box-shadow .3s;
+  animation:cardRise .7s cubic-bezier(.2,.8,.3,1) both;
+}
+.char-card:nth-child(1){animation-delay:.10s;}
+.char-card:nth-child(2){animation-delay:.22s;}
+@keyframes cardRise{from{opacity:0;transform:translateY(26px) scale(.97);}to{opacity:1;transform:none;}}
+@keyframes lobbyRise{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:none;}}
+
+.char-card::before{
+  content:"";position:absolute;top:-72px;right:-64px;width:190px;height:190px;border-radius:50%;
+  background:radial-gradient(circle,var(--acc),transparent 68%);
+  opacity:.34;filter:blur(18px);pointer-events:none;transition:opacity .3s;
+}
+.char-card::after{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:24px;
+  background:linear-gradient(160deg,rgba(255,255,255,.10),transparent 42%);
+}
+.char-card[data-game="yzg"]{--acc:#8fc4ff;--acc2:#cfe6ff;}
+.char-card[data-game="yzb"]{--acc:#ff9dc4;--acc2:#d9b8ff;}
+.char-card:active{transform:scale(.975);}
+@media (hover:hover){
+  .char-card:hover{transform:translateY(-6px);border-color:rgba(255,255,255,.30);
+    box-shadow:0 26px 54px rgba(0,0,0,.5),0 0 0 1px var(--acc) inset;}
+  .char-card:hover::before{opacity:.55;}
+}
+
+.char-avatar{
+  position:relative;z-index:1;width:112px;height:112px;border-radius:50%;overflow:hidden;
+  background:#0f1326;margin-bottom:16px;
+  box-shadow:0 14px 32px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.14), 0 0 26px -6px var(--acc);
+}
+.char-avatar svg{display:block;width:100%;height:100%;}
+.char-name{position:relative;z-index:1;font-size:19px;font-weight:800;letter-spacing:.08em;}
+.char-name em{
+  font-style:normal;font-size:10.5px;font-weight:500;letter-spacing:.18em;
+  color:var(--acc);margin-left:7px;vertical-align:2px;
+}
+.char-slogan{
+  position:relative;z-index:1;margin-top:9px;font-size:12.5px;line-height:1.85;
+  color:#a9b2d0;min-height:46px;
+}
+.char-tags{position:relative;z-index:1;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;}
+.char-tags i{
+  font-style:normal;font-size:10.5px;letter-spacing:.1em;padding:4px 10px;border-radius:99px;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.11);color:#c7cfe8;
+}
+.char-enter{
+  position:relative;z-index:1;margin-top:16px;font-size:11.5px;letter-spacing:.26em;
+  color:var(--acc);padding:8px 20px;border-radius:99px;
+  border:1px solid color-mix(in srgb, var(--acc) 45%, transparent);
+  background:color-mix(in srgb, var(--acc) 12%, transparent);
+}
+.lobby-foot{
+  font-size:11px;letter-spacing:.12em;color:#6e7799;line-height:2;
+  animation:lobbyRise .7s .35s cubic-bezier(.2,.8,.3,1) both;
+}
+
+/* ==================================================================
+   游戏 A：姚智博（高冷正太线）  #yzg
+   ================================================================== */
+#yzg{position:fixed;inset:0;display:none;z-index:10;}
+#yzg.on{display:block;}
+
+#yzg .yzg-screen{
+  position:absolute;inset:0;display:none;flex-direction:column;color:#2c3f56;
+  background:
+    radial-gradient(120% 80% at 10% 0%, #ffffff 0%, rgba(255,255,255,0) 55%),
+    radial-gradient(100% 70% at 100% 100%, #d7e8fa 0%, rgba(215,232,250,0) 60%),
+    linear-gradient(170deg,#f3f8fd 0%,#e2edf9 55%,#d8e6f6 100%);
+}
+#yzg .yzg-screen.active{display:flex;}
+
+/* ---- 开始页 ---- */
+#yzg .yzg-screen-start{overflow-y:auto;padding:24px;}
+#yzg .yzg-start-card{
+  margin:auto;width:100%;max-width:400px;
+  background:rgba(255,255,255,.82);
+  border:1px solid rgba(160,190,220,.5);border-radius:22px;
+  padding:30px 24px 26px;box-shadow:0 18px 50px rgba(110,150,190,.18);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  animation:yzgFadeUp .55s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes yzgFadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+#yzg .yzg-brand{
+  display:inline-block;font-size:11px;letter-spacing:.34em;color:#7fa3c8;margin-bottom:12px;
+  padding:3px 12px;border-radius:99px;border:1px solid rgba(127,163,200,.4);
+  background:rgba(127,163,200,.08);
+}
+#yzg .yzg-start-card h1{font-size:27px;font-weight:700;letter-spacing:.06em;color:#33506e;margin-bottom:8px;}
+#yzg .yzg-start-card h1 span{color:#6f9dc9;}
+#yzg .yzg-sub{font-size:12.5px;line-height:1.9;color:#8298b0;margin-bottom:24px;}
+#yzg .yzg-lbl{display:block;font-size:12px;letter-spacing:.16em;color:#7c96b2;margin:0 0 9px 2px;}
+#yzg .yzg-input-name{
+  width:100%;padding:14px 16px;font-size:15px;font-family:inherit;color:#2c3f56;
+  background:rgba(255,255,255,.9);border:1.5px solid #cfdff0;border-radius:14px;
+  outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:20px;
+}
+#yzg .yzg-input-name::placeholder{color:#a9bccf;}
+#yzg .yzg-input-name:focus{border-color:#8fb8de;box-shadow:0 0 0 4px rgba(143,184,222,.18);}
+#yzg .yzg-gender-row{display:flex;gap:9px;margin-bottom:26px;}
+#yzg .yzg-gender-btn{
+  flex:1;padding:12px 0;font-size:13.5px;font-family:inherit;cursor:pointer;
+  background:rgba(255,255,255,.75);border:1.5px solid #cfdff0;border-radius:13px;
+  color:#6f8ba8;transition:all .2s;
+}
+#yzg .yzg-gender-btn.on{
+  background:linear-gradient(160deg,#8fb8de,#6f9dc9);border-color:transparent;
+  color:#fff;font-weight:600;box-shadow:0 8px 20px rgba(111,157,201,.32);
+}
+#yzg .yzg-btn-main{
+  width:100%;padding:16px;font-size:15.5px;font-family:inherit;font-weight:600;
+  letter-spacing:.12em;color:#fff;cursor:pointer;border:none;border-radius:15px;
+  background:linear-gradient(135deg,#8fb8de,#6f9dc9);
+  box-shadow:0 10px 26px rgba(111,157,201,.32);
+  transition:transform .14s,box-shadow .2s;
+}
+#yzg .yzg-btn-main:active{transform:scale(.975);}
+#yzg .yzg-btn-ghost{
+  width:100%;margin-top:11px;padding:14px;font-size:13.5px;font-family:inherit;
+  cursor:pointer;border-radius:15px;color:#6f8ba8;
+  background:rgba(255,255,255,.6);border:1.5px solid #d3e2f1;
+  transition:all .2s;
+}
+#yzg .yzg-btn-ghost:active{background:#e6f0fa;}
+#yzg .yzg-tip{margin-top:20px;font-size:11px;line-height:1.9;color:#9db1c6;text-align:center;}
+
+/* ---- 游戏页 ---- */
+#yzg .yzg-status{
+  flex:0 0 auto;padding:12px 14px 10px;
+  padding-top:calc(12px + env(safe-area-inset-top));
+  background:rgba(255,255,255,.72);
+  border-bottom:1px solid rgba(170,198,224,.45);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+#yzg .yzg-stats{display:flex;gap:10px;}
+#yzg .yzg-stat{flex:1;min-width:0;}
+#yzg .yzg-stat-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+#yzg .yzg-stat-name{font-size:10.5px;letter-spacing:.08em;color:#88a1ba;}
+#yzg .yzg-stat-val{font-size:12px;font-weight:700;color:#42678c;}
+#yzg .yzg-track{height:5px;border-radius:99px;background:#dce8f4;overflow:hidden;}
+#yzg .yzg-fill{height:100%;width:0;border-radius:99px;transition:width .5s cubic-bezier(.3,.9,.3,1);}
+#yzg #yzg-fill-fav{background:linear-gradient(90deg,#f7b8ce,#ec8fb4);}
+#yzg #yzg-fill-dep{background:linear-gradient(90deg,#9fd6c4,#5fbfa3);}
+#yzg #yzg-fill-cool{background:linear-gradient(90deg,#a9c9ea,#7ba6d4);}
+#yzg .yzg-toolbar{display:flex;flex-wrap:wrap;gap:7px;justify-content:flex-end;margin-top:9px;}
+#yzg .yzg-toolbar button{
+  padding:6px 13px;font-size:11.5px;font-family:inherit;cursor:pointer;
+  border-radius:99px;color:#7b97b4;background:rgba(255,255,255,.85);
+  border:1px solid #d3e2f1;transition:all .18s;
+}
+#yzg .yzg-toolbar button:active{background:#dceafa;color:#4d7299;}
+#yzg #yzg-btn-lobby{color:#6f9dc9;border-color:#bcd6ee;background:rgba(143,184,222,.14);}
+
+#yzg .yzg-log{
+  flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 16px 8px;
+  -webkit-overflow-scrolling:touch;scroll-behavior:smooth;
+}
+#yzg .yzg-msg{margin-bottom:15px;animation:yzgMsgIn .35s ease both;}
+@keyframes yzgMsgIn{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+#yzg .yzg-speaker{
+  display:inline-block;font-size:11.5px;letter-spacing:.1em;color:#6f9dc9;
+  padding:2px 0;margin-bottom:5px;font-weight:600;
+}
+#yzg .yzg-speaker::before{content:"—— ";}
+#yzg .yzg-speaker-player{color:#8a9fb5;}
+#yzg .yzg-line{
+  font-size:15px;line-height:1.95;color:#37506b;word-break:break-word;letter-spacing:.01em;
+}
+#yzg .yzg-msg-narration .yzg-line{color:#6a8299;font-size:14.5px;}
+#yzg .yzg-msg-dialog .yzg-line{color:#2f4a68;}
+#yzg .yzg-msg-player{text-align:right;}
+#yzg .yzg-msg-player .yzg-line{color:#5b7692;font-style:italic;}
+
+#yzg .yzg-choices{
+  flex:0 0 auto;padding:10px 14px calc(14px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:9px;
+  background:linear-gradient(to top,rgba(240,246,252,.98) 55%,rgba(240,246,252,0));
+}
+#yzg .yzg-choices:empty{display:none;}
+#yzg .yzg-choice{
+  width:100%;text-align:left;padding:14px 16px;font-size:14px;line-height:1.6;
+  font-family:inherit;color:#3a5573;cursor:pointer;
+  background:rgba(255,255,255,.92);border:1.5px solid #d6e4f2;border-radius:14px;
+  box-shadow:0 3px 10px rgba(130,165,200,.10);
+  transition:transform .14s,background .2s,border-color .2s,box-shadow .2s;
+  animation:yzgChIn .32s cubic-bezier(.2,.8,.3,1) both;
+}
+@keyframes yzgChIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+#yzg .yzg-choice:active{
+  transform:scale(.985);background:#e8f2fc;border-color:#8fb8de;
+  box-shadow:0 2px 6px rgba(130,165,200,.2);
+}
+#yzg .yzg-choice::before{content:"▸ ";color:#9fc0e0;}
+
+/* ---- 结局页 ---- */
+#yzg .yzg-screen-end{overflow-y:auto;padding:24px;}
+#yzg .yzg-end-card{
+  margin:auto;width:100%;max-width:420px;background:rgba(255,255,255,.86);
+  border:1px solid rgba(160,190,220,.5);border-radius:22px;
+  padding:32px 24px 26px;box-shadow:0 18px 50px rgba(110,150,190,.18);
+  text-align:center;animation:yzgFadeUp .6s cubic-bezier(.2,.8,.3,1) both;
+}
+#yzg .yzg-end-tag{font-size:10.5px;letter-spacing:.5em;color:#9fbbd8;margin-bottom:14px;}
+#yzg .yzg-end-card h2{font-size:24px;letter-spacing:.1em;color:#33506e;margin-bottom:20px;}
+#yzg .yzg-end-text{font-size:14px;line-height:2.05;color:#4d6a87;text-align:left;margin-bottom:24px;}
+#yzg .yzg-end-text p{margin-bottom:12px;}
+#yzg .yzg-end-stats{
+  display:flex;justify-content:center;gap:22px;margin-bottom:26px;
+  padding-top:18px;border-top:1px dashed #d3e2f1;
+}
+#yzg .yzg-end-stat{font-size:11px;letter-spacing:.08em;color:#9db1c6;}
+#yzg .yzg-end-stat b{display:block;font-size:19px;color:#5f8ab5;margin-top:5px;font-weight:700;}
+
+#yzg .yzg-toast{
+  position:absolute;left:50%;bottom:14%;transform:translate(-50%,8px);
+  padding:9px 20px;border-radius:99px;font-size:13px;font-weight:600;
+  background:rgba(111,157,201,.95);color:#fff;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:all .28s ease;z-index:99;
+  box-shadow:0 8px 22px rgba(90,130,170,.3);
+}
+#yzg .yzg-toast.on{opacity:1;transform:translate(-50%,0);}
+#yzg .yzg-log::-webkit-scrollbar{width:4px;}
+#yzg .yzg-log::-webkit-scrollbar-thumb{background:#c9dcee;border-radius:99px;}
+
+/* ==================================================================
+   游戏 B：姚智博（傲娇学长线）  #yzb
+   ================================================================== */
+#yzb{position:fixed;inset:0;display:none;z-index:10;}
+#yzb.on{display:block;}
+
+#yzb .yzb-screen{
+  position:absolute;inset:0;display:none;flex-direction:column;
+  background:
+    radial-gradient(1000px 600px at 15% -10%, rgba(255,110,170,.20), transparent 60%),
+    radial-gradient(900px 700px at 110% 20%, rgba(120,120,255,.18), transparent 60%),
+    linear-gradient(180deg,#1b1028 0%,#120b1c 100%);
+  color:#f3e9fb;
+}
+#yzb .yzb-screen.active{display:flex;}
+
+/* ---- 开始界面 ---- */
+#yzb .yzb-start-screen{overflow-y:auto;padding:22px;}
+#yzb .yzb-start-card{
+  margin:auto;width:100%;max-width:400px;padding:26px 22px 24px;border-radius:22px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  animation:yzbCardIn .5s ease both;
+}
+@keyframes yzbCardIn{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
+#yzb .yzb-title-badge{
+  display:inline-block;font-size:11px;letter-spacing:3px;color:#ff9dc4;
+  border:1px solid rgba(255,157,196,.45);border-radius:99px;padding:3px 10px;margin-bottom:12px;
+}
+#yzb .yzb-start-card h1{margin:0 0 8px;font-size:26px;letter-spacing:2px;}
+#yzb .yzb-subtitle{margin:0 0 22px;font-size:13px;line-height:1.7;color:#b8a6c9;}
+#yzb .yzb-field-label{display:block;font-size:12px;color:#c9b6da;margin:0 0 8px;letter-spacing:1px;}
+#yzb .yzb-name-input{
+  width:100%;padding:13px 14px;border-radius:12px;font-size:15px;font-family:inherit;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.16);color:#fff;outline:none;
+  margin-bottom:18px;transition:border-color .2s;
+}
+#yzb .yzb-name-input:focus{border-color:#ff7fb0;}
+#yzb .yzb-name-input::placeholder{color:rgba(255,255,255,.32);}
+#yzb .yzb-gender-group{display:flex;gap:10px;margin-bottom:24px;}
+#yzb .yzb-gender-btn{
+  flex:1;padding:11px 0;border-radius:12px;font-size:14px;font-family:inherit;cursor:pointer;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);color:#e6d8f2;
+  transition:all .2s;
+}
+#yzb .yzb-gender-btn.active{
+  background:linear-gradient(135deg,#ff7fb0,#ff5a95);border-color:transparent;
+  color:#2a0d1b;font-weight:700;box-shadow:0 6px 18px rgba(255,90,149,.35);
+}
+#yzb .yzb-primary-btn{
+  width:100%;padding:15px;border:none;border-radius:14px;font-size:16px;font-weight:700;
+  letter-spacing:2px;font-family:inherit;cursor:pointer;color:#2a0d1b;
+  background:linear-gradient(135deg,#ffa3c6,#ff6fa8);
+  box-shadow:0 10px 26px rgba(255,110,168,.32);
+  transition:transform .15s,box-shadow .2s;
+}
+#yzb .yzb-primary-btn:active{transform:scale(.98);box-shadow:0 6px 16px rgba(255,110,168,.3);}
+#yzb .yzb-ghost-btn{
+  width:100%;margin-top:12px;padding:13px;border-radius:14px;font-size:14px;font-family:inherit;cursor:pointer;
+  background:transparent;border:1px solid rgba(255,255,255,.22);color:#dccbea;
+}
+#yzb .yzb-hint{margin:16px 0 0;font-size:11.5px;color:#8f7ba3;text-align:center;line-height:1.7;}
+
+/* ---- 游戏界面 ---- */
+#yzb .yzb-topbar{
+  flex:0 0 auto;padding:10px 12px 9px;
+  padding-top:calc(10px + env(safe-area-inset-top));
+  background:rgba(18,10,28,.72);
+  border-bottom:1px solid rgba(255,255,255,.08);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+#yzb .yzb-stats{display:flex;gap:10px;}
+#yzb .yzb-stat{flex:1;min-width:0;}
+#yzb .yzb-stat-head{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;color:#c6b3d8;margin-bottom:5px;}
+#yzb .yzb-stat-head b{font-size:12px;color:#fff;}
+#yzb .yzb-bar{height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden;}
+#yzb .yzb-bar i{display:block;height:100%;width:0;border-radius:99px;transition:width .45s cubic-bezier(.4,0,.2,1);}
+#yzb #yzb-bar-affection{background:linear-gradient(90deg,#ff9dc4,#ff4d8d);}
+#yzb #yzb-bar-tsundere{background:linear-gradient(90deg,#a8c8ff,#6b8bff);}
+#yzb #yzb-bar-trust{background:linear-gradient(90deg,#8ff0d0,#38c79a);}
+#yzb .yzb-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;margin-top:9px;}
+#yzb .yzb-tools button{
+  padding:5px 13px;border-radius:99px;font-size:11.5px;font-family:inherit;cursor:pointer;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);color:#d9c7e8;
+  transition:all .2s;
+}
+#yzb .yzb-tools button:active{background:rgba(255,127,176,.3);border-color:rgba(255,127,176,.6);}
+#yzb #yzb-lobby-btn{color:#ff9dc4;border-color:rgba(255,157,196,.45);background:rgba(255,127,176,.12);}
+
+#yzb .yzb-stage{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 16px 10px;-webkit-overflow-scrolling:touch;}
+#yzb .yzb-scene-label{
+  display:inline-block;font-size:11px;letter-spacing:3px;color:#e0b6ff;
+  padding:3px 10px;margin-bottom:14px;border-left:2px solid #ff7fb0;
+  background:rgba(255,127,176,.08);border-radius:0 8px 8px 0;
+}
+#yzb .yzb-dialog p{margin:0 0 13px;line-height:1.9;font-size:15px;word-break:break-word;}
+#yzb .yzb-narration{color:#e7dcf2;}
+#yzb .yzb-tsundere-line{
+  position:relative;color:#ffe0ee;background:rgba(255,127,176,.10);
+  border-left:3px solid #ff7fb0;border-radius:0 14px 14px 0;
+  padding:11px 14px 11px 15px;font-size:14.5px;
+}
+#yzb .yzb-tsundere-line::before{
+  content:"傲娇暴露";display:block;font-size:10px;letter-spacing:2px;
+  color:#ff9dc4;margin-bottom:6px;
+}
+#yzb .yzb-player-line{color:#b9e2ff;text-align:right;font-size:14.5px;}
+#yzb .yzb-effect-tip{
+  display:block;width:fit-content;margin:0 auto 14px;text-align:center;
+  font-size:12.5px;color:#ffe9a8;letter-spacing:1px;
+  background:rgba(255,233,168,.09);border-radius:99px;padding:7px 14px;
+}
+#yzb .yzb-choices{
+  flex:0 0 auto;padding:12px 14px calc(16px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:9px;
+  background:linear-gradient(to top,rgba(12,6,20,.96) 45%,rgba(12,6,20,0));
+}
+#yzb .yzb-choices:empty{padding:0;background:none;}
+#yzb .yzb-choice-btn{
+  width:100%;text-align:left;padding:13px 16px;border-radius:14px;
+  font-size:14px;line-height:1.55;font-family:inherit;cursor:pointer;
+  background:rgba(255,255,255,.075);border:1px solid rgba(255,255,255,.155);color:#f4ebff;
+  transition:transform .15s,background .2s,border-color .2s;
+  animation:yzbChoiceIn .3s ease both;
+}
+@keyframes yzbChoiceIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+#yzb .yzb-choice-btn:active{transform:scale(.985);background:rgba(255,127,176,.22);border-color:rgba(255,127,176,.6);}
+#yzb .yzb-choice-btn:disabled{opacity:.4;}
+
+/* ---- 结局界面 ---- */
+#yzb .yzb-ending-screen{overflow-y:auto;padding:22px;}
+#yzb .yzb-ending-card{
+  margin:auto;width:100%;max-width:420px;padding:30px 24px;border-radius:22px;text-align:center;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  animation:yzbCardIn .6s ease both;
+}
+#yzb .yzb-ending-label{font-size:11px;letter-spacing:6px;color:#ff9dc4;margin-bottom:10px;}
+#yzb .yzb-ending-card h2{margin:0 0 16px;font-size:24px;letter-spacing:2px;}
+#yzb .yzb-ending-text{font-size:14.5px;line-height:2;color:#e3d6ef;text-align:left;margin:0 0 20px;}
+#yzb .yzb-ending-stats{display:flex;justify-content:center;gap:18px;margin-bottom:24px;font-size:12px;color:#c1aed4;}
+#yzb .yzb-ending-stats b{color:#ffd9e8;font-size:15px;display:block;margin-top:4px;}
+
+#yzb .yzb-toast{
+  position:absolute;left:50%;bottom:12%;transform:translate(-50%,10px);
+  padding:9px 18px;border-radius:99px;font-size:13px;font-weight:600;
+  background:rgba(255,127,176,.94);color:#2a0d1b;white-space:nowrap;
+  opacity:0;pointer-events:none;transition:all .28s ease;z-index:99;
+}
+#yzb .yzb-toast.show{opacity:1;transform:translate(-50%,0);}
+#yzb .yzb-stage::-webkit-scrollbar{width:4px;}
+#yzb .yzb-stage::-webkit-scrollbar-thumb{background:rgba(255,127,176,.35);border-radius:99px;}
+
+/* ==================================================================
+   小屏适配
+   ================================================================== */
+@media (max-width:360px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));}
+  #yzg .yzg-start-card h1{font-size:23px;}
+  #yzg .yzg-line{font-size:14px;}
+  #yzg .yzg-choice{font-size:13px;padding:12px 14px;}
+  #yzg .yzg-toolbar button{padding:5px 10px;font-size:11px;}
+  #yzb .yzb-start-card h1{font-size:22px;}
+  #yzb .yzb-dialog p{font-size:14px;}
+  #yzb .yzb-tools button{padding:5px 10px;font-size:11px;}
+  .char-avatar{width:96px;height:96px;}
+}
+
+#yzw{position:fixed;inset:0;display:none;z-index:10;background:#0b0e1c;}
+#yzw.on{display:block;}
+#yzw iframe{display:block;width:100%;height:100%;border:0;background:#0b0e1c;}
+#yzw-back{position:fixed;top:calc(12px + env(safe-area-inset-top));left:12px;z-index:60;display:none;padding:9px 14px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(19,25,42,.88);color:#fff;font-size:13px;cursor:pointer;backdrop-filter:blur(10px);}
+#yzw-back.on{display:block;}
+.yzw-avatar{display:grid;place-items:center;background:radial-gradient(circle at 35% 28%,#f5e8d4,#b6c5b1 72%,#667b73);color:#40584f;font-family:serif;font-size:42px;font-weight:700;}
+@media(max-width:560px){.cards{grid-template-columns:1fr;}}
+
+</style>
+</head>
+<body>
+
+<!-- ==================================================================
+     选角大厅
+     ================================================================== -->
+<div id="lobby" class="on">
+  <div class="lobby-inner">
+    <div class="lobby-head">
+      <div class="lobby-badge">O T O M E · S I M</div>
+      <h1 class="lobby-title">选角大厅</h1>
+      <p class="lobby-subtitle">三段心动故事，三种不同的姚智博</p>
+    </div>
+
+    <div class="cards">
+      <!-- 姚智博 · 高冷正太线 -->
+      <button class="char-card" data-game="yzg" type="button">
+        <div class="char-avatar">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <radialGradient id="lgAv1" cx="50%" cy="30%" r="82%">
+                <stop offset="0%" stop-color="#eaf4ff"/>
+                <stop offset="100%" stop-color="#a9cdef"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="60" r="60" fill="url(#lgAv1)"/>
+            <path d="M26 120c2-19 16-28 34-28s32 9 34 28z" fill="#ffffff"/>
+            <path d="M60 93c-6 0-11 1-15 3l15 15 15-15c-4-2-9-3-15-3z" fill="#e4eefa"/>
+            <path d="M52 78h16v14c0 4-16 4-16 0z" fill="#f6dccd"/>
+            <path d="M60 24c-16 0-27 11-27 27 0 17 12 31 27 31s27-14 27-31c0-16-11-27-27-27z" fill="#fde6d8"/>
+            <circle cx="33" cy="58" r="5" fill="#fde6d8"/>
+            <circle cx="87" cy="58" r="5" fill="#fde6d8"/>
+            <path d="M60 18c-19 0-31 13-31 31 0 7 1 13 3 18-3-15 2-29 13-35 9 5 21 5 30 0 11 6 16 20 13 35 2-5 3-11 3-18 0-18-12-31-31-31z" fill="#2b3440"/>
+            <path d="M31 51c0-16 13-28 29-28s29 12 29 28c-5-9-13-14-21-12-4-6-13-8-19-5-8 2-14 9-18 17z" fill="#333e4d"/>
+            <ellipse cx="49" cy="59" rx="3.4" ry="4.6" fill="#2f3b4a"/>
+            <ellipse cx="71" cy="59" rx="3.4" ry="4.6" fill="#2f3b4a"/>
+            <circle cx="50" cy="57.4" r="1.2" fill="#ffffff"/>
+            <circle cx="72" cy="57.4" r="1.2" fill="#ffffff"/>
+            <ellipse cx="43" cy="68" rx="5.5" ry="3.2" fill="#ffb4c8" opacity=".5"/>
+            <ellipse cx="77" cy="68" rx="5.5" ry="3.2" fill="#ffb4c8" opacity=".5"/>
+            <path d="M56 72q4 3 8 0" stroke="#e0a99f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="char-name">姚智博<em>高冷正太</em></div>
+        <p class="char-slogan">他惜字如金，脸上永远没有表情。<br>但他记得你说过的每一句话。</p>
+        <div class="char-tags"><i>傲娇</i><i>寡言</i><i>校园</i></div>
+        <div class="char-enter">进 入 剧 情</div>
+      </button>
+
+      <!-- 姚智博 · 傲娇学长线 -->
+      <button class="char-card" data-game="yzb" type="button">
+        <div class="char-avatar">
+          <svg viewBox="0 0 120 120" aria-hidden="true">
+            <defs>
+              <radialGradient id="lgAv2" cx="50%" cy="30%" r="82%">
+                <stop offset="0%" stop-color="#ffe9f4"/>
+                <stop offset="100%" stop-color="#c9a5f0"/>
+              </radialGradient>
+            </defs>
+            <circle cx="60" cy="60" r="60" fill="url(#lgAv2)"/>
+            <path d="M26 120c2-19 16-28 34-28s32 9 34 28z" fill="#3a2a4e"/>
+            <path d="M52 96l8 11 8-11c-3-1-5-2-8-2s-5 1-8 2z" fill="#ff9dc4"/>
+            <path d="M52 78h16v14c0 4-16 4-16 0z" fill="#f7dccb"/>
+            <path d="M60 24c-16 0-27 11-27 27 0 17 12 31 27 31s27-14 27-31c0-16-11-27-27-27z" fill="#ffe4d3"/>
+            <circle cx="33" cy="58" r="5" fill="#ffe4d3"/>
+            <circle cx="87" cy="58" r="5" fill="#ffe4d3"/>
+            <path d="M60 17c-20 0-32 13-32 32 0 9 2 16 4 21-2-16 3-30 14-36 9 5 19 5 28 0 11 6 16 20 14 36 2-5 4-12 4-21 0-19-12-32-32-32z" fill="#4a2f4e"/>
+            <path d="M30 50c1-17 14-29 30-29s29 12 30 29c-6-10-14-15-23-13-3-6-13-9-20-6-8 3-14 10-17 19z" fill="#5a3a5e"/>
+            <path d="M42 34c-6 5-9 12-9 19 3-8 8-14 15-17z" fill="#ff9dc4" opacity=".7"/>
+            <ellipse cx="49" cy="59" rx="3.6" ry="4.8" fill="#5a3a5e"/>
+            <ellipse cx="71" cy="59" rx="3.6" ry="4.8" fill="#5a3a5e"/>
+            <circle cx="50" cy="57.3" r="1.3" fill="#ffffff"/>
+            <circle cx="72" cy="57.3" r="1.3" fill="#ffffff"/>
+            <ellipse cx="43" cy="68" rx="5.5" ry="3.2" fill="#ff9dc4" opacity=".55"/>
+            <ellipse cx="77" cy="68" rx="5.5" ry="3.2" fill="#ff9dc4" opacity=".55"/>
+            <path d="M56 71q4 4 8 0" stroke="#d99a8f" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+            <path d="M30 50a30 30 0 0 1 60 0" stroke="#2a1c38" stroke-width="5" fill="none" stroke-linecap="round"/>
+            <rect x="24" y="49" width="12" height="22" rx="6" fill="#2a1c38"/>
+            <rect x="84" y="49" width="12" height="22" rx="6" fill="#2a1c38"/>
+            <rect x="27" y="54" width="6" height="13" rx="3" fill="#ff9dc4"/>
+            <rect x="87" y="54" width="6" height="13" rx="3" fill="#ff9dc4"/>
+          </svg>
+        </div>
+        <div class="char-name">姚智博<em>傲娇学长</em></div>
+        <p class="char-slogan">嘴上说着不在乎的直播主，<br>其实每一场直播都在等你出现。</p>
+        <div class="char-tags"><i>学长</i><i>主播</i><i>口嫌体正</i></div>
+        <div class="char-enter">进 入 剧 情</div>
+      </button>
+    </div>
+
+      <!-- 姚智博 · 衡温者线 -->
+      <button class="char-card" data-game="yzw" type="button">
+        <div class="char-avatar yzw-avatar" aria-hidden="true">温</div>
+        <div class="char-name">姚智博<em>衡温者</em></div>
+        <p class="char-slogan">他永远笑着，却把每一次靠近都记在心里。<br>温和，是他留给世界的边界。</p>
+        <div class="char-tags"><i>温柔</i><i>克制</i><i>衡温者</i></div>
+        <div class="char-enter">进 入 剧 情</div>
+      </button>
+
+    <p class="lobby-foot">三条独立剧情线 · 各自独立存档 · 随时可返回大厅</p>
+  </div>
+</div>
+
+
+<!-- ==================================================================
+     游戏 A：姚智博（高冷正太线）
+     ================================================================== -->
+<div id="yzg">
+
+  <!-- 开始页 -->
+  <section id="yzg-screen-start" class="yzg-screen yzg-screen-start active">
+    <div class="yzg-start-card">
+      <div class="yzg-brand">高冷正太线</div>
+      <h1>攻略<span>姚智博</span></h1>
+      <p class="yzg-sub">他惜字如金，脸上永远没有表情。<br>但你会慢慢发现，他记得你说过的每一句话。</p>
+
+      <label class="yzg-lbl">你的名字</label>
+      <input id="yzg-input-name" class="yzg-input-name" type="text" maxlength="10" placeholder="请输入名字" autocomplete="off">
+
+      <label class="yzg-lbl">你的性别</label>
+      <div class="yzg-gender-row" id="yzg-gender-row">
+        <button type="button" class="yzg-gender-btn" data-g="男">男</button>
+        <button type="button" class="yzg-gender-btn" data-g="女">女</button>
+        <button type="button" class="yzg-gender-btn on" data-g="其他">其他</button>
+      </div>
+
+      <button id="yzg-btn-start" class="yzg-btn-main">开始游戏</button>
+      <button id="yzg-btn-continue" class="yzg-btn-ghost" style="display:none;">读取存档</button>
+
+      <p class="yzg-tip">好感度 · 依赖度 · 高冷值<br>高冷值越低，他越容易破防。</p>
+    </div>
+  </section>
+
+  <!-- 游戏页 -->
+  <section id="yzg-screen-game" class="yzg-screen yzg-screen-game">
+    <div class="yzg-status">
+      <div class="yzg-stats">
+        <div class="yzg-stat">
+          <div class="yzg-stat-top"><span class="yzg-stat-name">好感度</span><span class="yzg-stat-val" id="yzg-v-fav">0</span></div>
+          <div class="yzg-track"><div class="yzg-fill" id="yzg-fill-fav"></div></div>
+        </div>
+        <div class="yzg-stat">
+          <div class="yzg-stat-top"><span class="yzg-stat-name">依赖度</span><span class="yzg-stat-val" id="yzg-v-dep">0</span></div>
+          <div class="yzg-track"><div class="yzg-fill" id="yzg-fill-dep"></div></div>
+        </div>
+        <div class="yzg-stat">
+          <div class="yzg-stat-top"><span class="yzg-stat-name">高冷值</span><span class="yzg-stat-val" id="yzg-v-cool">60</span></div>
+          <div class="yzg-track"><div class="yzg-fill" id="yzg-fill-cool"></div></div>
+        </div>
+      </div>
+      <div class="yzg-toolbar">
+        <button id="yzg-btn-lobby">返回大厅</button>
+        <button id="yzg-btn-save">存档</button>
+        <button id="yzg-btn-load">读档</button>
+        <button id="yzg-btn-restart">重新开始</button>
+      </div>
+    </div>
+
+    <div class="yzg-log" id="yzg-log"></div>
+    <div class="yzg-choices" id="yzg-choices"></div>
+  </section>
+
+  <!-- 结局页 -->
+  <section id="yzg-screen-end" class="yzg-screen yzg-screen-end">
+    <div class="yzg-end-card">
+      <div class="yzg-end-tag">E N D I N G</div>
+      <h2 id="yzg-end-title">结局</h2>
+      <div class="yzg-end-text" id="yzg-end-text"></div>
+      <div class="yzg-end-stats" id="yzg-end-stats"></div>
+      <button id="yzg-btn-again" class="yzg-btn-main">重新开始</button>
+    </div>
+  </section>
+
+  <div class="yzg-toast" id="yzg-toast"></div>
+</div>
+
+
+<!-- ==================================================================
+     游戏 B：姚智博（傲娇学长线）
+     ================================================================== -->
+<div id="yzb">
+
+  <!-- 开始界面 -->
+  <section id="yzb-start-screen" class="yzb-screen yzb-start-screen active">
+    <div class="yzb-start-card">
+      <div class="yzb-title-badge">傲娇学长线</div>
+      <h1>攻略姚智博</h1>
+      <p class="yzb-subtitle">嘴上说着不在乎的直播主，其实每一场直播都在等你出现。</p>
+
+      <label class="yzb-field-label" for="yzb-name-input">你的名字</label>
+      <input id="yzb-name-input" class="yzb-name-input" type="text" maxlength="12" placeholder="请输入名字" autocomplete="off" />
+
+      <label class="yzb-field-label">你的性别</label>
+      <div class="yzb-gender-group" id="yzb-gender-group">
+        <button type="button" class="yzb-gender-btn" data-gender="男">男</button>
+        <button type="button" class="yzb-gender-btn" data-gender="女">女</button>
+        <button type="button" class="yzb-gender-btn active" data-gender="其他">其他</button>
+      </div>
+
+      <button id="yzb-start-btn" class="yzb-primary-btn">开始攻略</button>
+      <button id="yzb-continue-btn" class="yzb-ghost-btn" hidden>读取存档</button>
+
+      <p class="yzb-hint">好感度 / 傲娇值 / 信任<br />傲娇值越低，他越坦率。</p>
+    </div>
+  </section>
+
+  <!-- 游戏界面 -->
+  <section id="yzb-game-screen" class="yzb-screen yzb-game-screen">
+    <div class="yzb-topbar">
+      <div class="yzb-stats">
+        <div class="yzb-stat">
+          <div class="yzb-stat-head"><span>好感度</span><b id="yzb-num-affection">0</b></div>
+          <div class="yzb-bar"><i id="yzb-bar-affection"></i></div>
+        </div>
+        <div class="yzb-stat">
+          <div class="yzb-stat-head"><span>傲娇值</span><b id="yzb-num-tsundere">0</b></div>
+          <div class="yzb-bar"><i id="yzb-bar-tsundere"></i></div>
+        </div>
+        <div class="yzb-stat">
+          <div class="yzb-stat-head"><span>信任</span><b id="yzb-num-trust">0</b></div>
+          <div class="yzb-bar"><i id="yzb-bar-trust"></i></div>
+        </div>
+      </div>
+      <div class="yzb-tools">
+        <button id="yzb-lobby-btn">返回大厅</button>
+        <button id="yzb-save-btn">存档</button>
+        <button id="yzb-load-btn">读档</button>
+        <button id="yzb-restart-btn">重开</button>
+      </div>
+    </div>
+
+    <div class="yzb-stage" id="yzb-stage">
+      <div class="yzb-scene-label" id="yzb-scene-label">序章</div>
+      <div class="yzb-dialog" id="yzb-dialog"></div>
+    </div>
+
+    <div class="yzb-choices" id="yzb-choices"></div>
+  </section>
+
+  <!-- 结局界面 -->
+  <section id="yzb-ending-screen" class="yzb-screen yzb-ending-screen">
+    <div class="yzb-ending-card">
+      <div class="yzb-ending-label">E N D</div>
+      <h2 id="yzb-ending-name">结局</h2>
+      <p id="yzb-ending-text" class="yzb-ending-text"></p>
+      <div class="yzb-ending-stats" id="yzb-ending-stats"></div>
+      <button id="yzb-ending-restart" class="yzb-primary-btn">重新开始</button>
+    </div>
+  </section>
+
+  <div class="yzb-toast" id="yzb-toast"></div>
+</div>
+
+
+
+<!-- ==================================================================
+     游戏 C：姚智博（衡温者线，独立页面作用域）
+     ================================================================== -->
+<div id="yzw"><iframe id="yzw-frame" title="姚智博·衡温者剧情"></iframe></div>
+<button id="yzw-back" type="button" aria-label="返回选角大厅">← 返回选角大厅</button>
+
+<script>
+/* ==================================================================
+   全局：大厅 ↔ 游戏 切换
+   ================================================================== */
+window.__GAMES = window.__GAMES || {};
+
+(function () {
+  'use strict';
+
+  var lobby = document.getElementById('lobby');
+  var roots = { yzg: document.getElementById('yzg'), yzb: document.getElementById('yzb'), yzw: document.getElementById('yzw') };
+  var yzwFrame = document.getElementById('yzw-frame');
+  yzwFrame.srcdoc = "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no\">\n    <meta name=\"theme-color\" content=\"#1a1a2e\">\n    <title>衡温者 · 恋爱模拟器</title>\n    <style>\n        :root {\n            --bg-primary: #1a1a2e;\n            --bg-secondary: #16213e;\n            --bg-card: rgba(255, 255, 255, 0.03);\n            --bg-card-hover: rgba(255, 255, 255, 0.06);\n            --text-primary: #e8e8f0;\n            --text-secondary: #a0a0b8;\n            --text-muted: #666680;\n            --accent-cold: #4a6fa5;\n            --accent-warm: #8b7d6b;\n            --accent-hot: #e8956b;\n            --border-subtle: rgba(255, 255, 255, 0.08);\n            --border-glow: rgba(120, 140, 180, 0.25);\n            --shadow-deep: 0 20px 60px rgba(0, 0, 0, 0.5);\n            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;\n            --font-mono: 'SF Mono', 'Fira Code', 'Cascadia Code', 'Roboto Mono', monospace;\n            --ease-out: cubic-bezier(0.22, 1, 0.36, 1);\n            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);\n        }\n\n        * {\n            margin: 0;\n            padding: 0;\n            box-sizing: border-box;\n            -webkit-tap-highlight-color: transparent;\n            -webkit-font-smoothing: antialiased;\n            -moz-osx-font-smoothing: grayscale;\n        }\n\n        html,\n        body {\n            height: 100%;\n            overflow: hidden;\n            font-family: var(--font-sans);\n            background: var(--bg-primary);\n            color: var(--text-primary);\n            transition: background 0.7s var(--ease-out);\n            overscroll-behavior: none;\n        }\n\n        body[data-state=\"cold\"] {\n            --bg-primary: #0f1629;\n            --bg-secondary: #0d1225;\n            --accent: var(--accent-cold);\n            --border-glow: rgba(74, 111, 165, 0.3);\n            --glow-color: rgba(74, 111, 165, 0.15);\n        }\n        body[data-state=\"warm\"] {\n            --bg-primary: #1a1a2e;\n            --bg-secondary: #1a2035;\n            --accent: var(--accent-warm);\n            --border-glow: rgba(139, 125, 107, 0.3);\n            --glow-color: rgba(139, 125, 107, 0.12);\n        }\n        body[data-state=\"hot\"] {\n            --bg-primary: #201520;\n            --bg-secondary: #1c151d;\n            --accent: var(--accent-hot);\n            --border-glow: rgba(232, 149, 107, 0.35);\n            --glow-color: rgba(232, 149, 107, 0.15);\n        }\n\n        #app {\n            position: fixed;\n            inset: 0;\n            display: flex;\n            flex-direction: column;\n            overflow: hidden;\n            background:\n                radial-gradient(ellipse at 20% 0%, var(--glow-color), transparent 60%),\n                radial-gradient(ellipse at 80% 100%, rgba(30, 30, 50, 0.4), transparent 50%),\n                var(--bg-primary);\n            transition: background 0.8s var(--ease-out);\n        }\n\n        .screen {\n            position: absolute;\n            inset: 0;\n            display: flex;\n            flex-direction: column;\n            opacity: 0;\n            pointer-events: none;\n            transition: opacity 0.5s var(--ease-out);\n        }\n        .screen.active {\n            opacity: 1;\n            pointer-events: auto;\n            z-index: 2;\n        }\n\n        /* 序章过渡 */\n        #screen-prologue {\n            z-index: 10;\n            background: #000;\n            opacity: 0;\n            pointer-events: none;\n            align-items: center;\n            justify-content: center;\n        }\n        #screen-prologue.active {\n            opacity: 1;\n            pointer-events: auto;\n        }\n        #prologue-text {\n            font-size: clamp(1.1rem, 4vw, 1.6rem);\n            color: #c8c8e0;\n            text-align: center;\n            letter-spacing: 0.12em;\n            line-height: 2.2;\n            opacity: 0;\n            transition: opacity 2.5s ease;\n            max-width: 85%;\n            font-weight: 300;\n        }\n        #prologue-text.visible {\n            opacity: 1;\n        }\n\n        /* 开始页面 */\n        #screen-start {\n            align-items: center;\n            justify-content: center;\n            padding: 24px;\n            background: var(--bg-primary);\n        }\n        .start-card {\n            width: 100%;\n            max-width: 420px;\n            padding: 32px 28px 28px;\n            background: var(--bg-card);\n            border: 1px solid var(--border-subtle);\n            border-radius: 20px;\n            backdrop-filter: blur(20px);\n            -webkit-backdrop-filter: blur(20px);\n            box-shadow: var(--shadow-deep);\n        }\n        .start-label {\n            font-family: var(--font-mono);\n            font-size: 0.65rem;\n            letter-spacing: 0.4em;\n            color: var(--accent);\n            text-transform: uppercase;\n            margin-bottom: 8px;\n            opacity: 0.8;\n        }\n        .start-title {\n            font-size: clamp(1.8rem, 6vw, 2.4rem);\n            font-weight: 200;\n            letter-spacing: 0.06em;\n            color: var(--text-primary);\n            margin-bottom: 6px;\n        }\n        .start-sub {\n            font-size: 0.85rem;\n            color: var(--text-muted);\n            margin-bottom: 28px;\n            letter-spacing: 0.02em;\n            line-height: 1.6;\n        }\n        .form-group {\n            margin-bottom: 18px;\n        }\n        .form-label {\n            display: block;\n            font-size: 0.7rem;\n            letter-spacing: 0.18em;\n            text-transform: uppercase;\n            color: var(--text-secondary);\n            margin-bottom: 8px;\n            font-weight: 500;\n        }\n        #input-name {\n            width: 100%;\n            padding: 14px 16px;\n            font-size: 1rem;\n            font-family: var(--font-sans);\n            background: rgba(255, 255, 255, 0.04);\n            border: 1px solid var(--border-subtle);\n            border-radius: 12px;\n            color: var(--text-primary);\n            outline: none;\n            transition: border-color 0.3s, box-shadow 0.3s;\n            letter-spacing: 0.05em;\n        }\n        #input-name::placeholder {\n            color: var(--text-muted);\n            letter-spacing: 0.05em;\n        }\n        #input-name:focus {\n            border-color: var(--accent);\n            box-shadow: 0 0 0 3px rgba(120, 140, 180, 0.12);\n        }\n        .gender-row {\n            display: flex;\n            gap: 8px;\n        }\n        .gender-btn {\n            flex: 1;\n            padding: 11px 0;\n            font-size: 0.85rem;\n            font-family: var(--font-sans);\n            border: 1px solid var(--border-subtle);\n            border-radius: 10px;\n            background: rgba(255, 255, 255, 0.03);\n            color: var(--text-secondary);\n            cursor: pointer;\n            transition: all 0.3s var(--ease-out);\n            letter-spacing: 0.06em;\n        }\n        .gender-btn.active {\n            border-color: var(--accent);\n            background: rgba(255, 255, 255, 0.06);\n            color: var(--text-primary);\n            box-shadow: 0 0 16px var(--glow-color);\n        }\n        .btn-primary {\n            width: 100%;\n            padding: 16px;\n            font-size: 0.92rem;\n            font-family: var(--font-sans);\n            letter-spacing: 0.16em;\n            font-weight: 600;\n            color: #fff;\n            background: var(--accent);\n            border: none;\n            border-radius: 12px;\n            cursor: pointer;\n            transition: all 0.35s var(--ease-out);\n            box-shadow: 0 8px 24px var(--glow-color);\n            margin-top: 8px;\n        }\n        .btn-primary:active {\n            transform: scale(0.97);\n            box-shadow: 0 4px 12px var(--glow-color);\n        }\n        .btn-secondary {\n            width: 100%;\n            padding: 13px;\n            margin-top: 8px;\n            font-size: 0.82rem;\n            font-family: var(--font-sans);\n            letter-spacing: 0.1em;\n            color: var(--text-secondary);\n            background: transparent;\n            border: 1px solid var(--border-subtle);\n            border-radius: 12px;\n            cursor: pointer;\n            transition: all 0.3s var(--ease-out);\n        }\n        .btn-secondary:active {\n            background: rgba(255, 255, 255, 0.04);\n        }\n        .start-note {\n            margin-top: 18px;\n            font-size: 0.68rem;\n            color: var(--text-muted);\n            text-align: center;\n            letter-spacing: 0.06em;\n            line-height: 1.8;\n        }\n\n        /* 游戏界面 */\n        #screen-game {\n            flex-direction: column;\n        }\n        .game-header {\n            flex-shrink: 0;\n            padding: 14px 18px 10px;\n            padding-top: calc(14px + env(safe-area-inset-top));\n            display: flex;\n            flex-direction: column;\n            gap: 10px;\n            border-bottom: 1px solid var(--border-subtle);\n            background: rgba(0, 0, 0, 0.2);\n            backdrop-filter: blur(16px);\n            -webkit-backdrop-filter: blur(16px);\n            z-index: 5;\n        }\n        .status-bar {\n            display: flex;\n            gap: 8px;\n            flex-wrap: wrap;\n        }\n        .stat-item {\n            flex: 1;\n            min-width: 70px;\n            display: flex;\n            flex-direction: column;\n            gap: 4px;\n        }\n        .stat-label {\n            font-size: 0.58rem;\n            letter-spacing: 0.16em;\n            text-transform: uppercase;\n            color: var(--text-muted);\n            font-weight: 500;\n            display: flex;\n            justify-content: space-between;\n            align-items: center;\n        }\n        .stat-value {\n            font-size: 0.75rem;\n            font-weight: 700;\n            color: var(--accent);\n            font-family: var(--font-mono);\n        }\n        .stat-track {\n            height: 3px;\n            background: rgba(255, 255, 255, 0.06);\n            border-radius: 99px;\n            overflow: hidden;\n        }\n        .stat-fill {\n            height: 100%;\n            border-radius: 99px;\n            background: var(--accent);\n            transition: width 0.7s var(--ease-spring);\n        }\n        .violation-indicator {\n            display: flex;\n            gap: 6px;\n            align-items: center;\n            font-size: 0.65rem;\n            letter-spacing: 0.08em;\n            color: var(--text-muted);\n        }\n        .violation-dot {\n            width: 8px;\n            height: 8px;\n            border-radius: 50%;\n            background: rgba(255, 255, 255, 0.1);\n            border: 1px solid rgba(255, 255, 255, 0.15);\n            transition: all 0.4s;\n        }\n        .violation-dot.filled {\n            background: #d45c5c;\n            border-color: #d45c5c;\n            box-shadow: 0 0 8px rgba(212, 92, 92, 0.5);\n        }\n        .ledger-indicator {\n            display: flex;\n            gap: 6px;\n            align-items: center;\n            font-size: 0.65rem;\n            letter-spacing: 0.08em;\n            color: var(--text-muted);\n        }\n        .ledger-dot {\n            width: 8px;\n            height: 8px;\n            border-radius: 50%;\n            background: rgba(255, 255, 255, 0.1);\n            border: 1px solid rgba(255, 255, 255, 0.15);\n            transition: all 0.4s;\n        }\n        .ledger-dot.filled {\n            background: #b5895c;\n            border-color: #b5895c;\n            box-shadow: 0 0 8px rgba(181, 137, 92, 0.4);\n        }\n        .toolbar {\n            display: flex;\n            gap: 6px;\n            justify-content: flex-end;\n        }\n        .toolbar button {\n            padding: 6px 14px;\n            font-size: 0.7rem;\n            font-family: var(--font-sans);\n            letter-spacing: 0.06em;\n            background: rgba(255, 255, 255, 0.04);\n            border: 1px solid var(--border-subtle);\n            border-radius: 8px;\n            color: var(--text-secondary);\n            cursor: pointer;\n            transition: all 0.25s;\n        }\n        .toolbar button:active {\n            background: rgba(255, 255, 255, 0.08);\n        }\n\n        /* 对话区 */\n        .game-body {\n            flex: 1;\n            min-height: 0;\n            display: flex;\n            flex-direction: column;\n        }\n        .message-log {\n            flex: 1;\n            min-height: 0;\n            overflow-y: auto;\n            padding: 20px 18px 10px;\n            -webkit-overflow-scrolling: touch;\n            scroll-behavior: smooth;\n            display: flex;\n            flex-direction: column;\n        }\n        .message {\n            margin-bottom: 22px;\n            animation: msgIn 0.5s var(--ease-out) both;\n            max-width: 90%;\n        }\n        @keyframes msgIn {\n            from { opacity: 0; transform: translateY(14px); }\n            to { opacity: 1; transform: translateY(0); }\n        }\n        .message.speaker-yzb {\n            align-self: flex-start;\n        }\n        .message.speaker-player {\n            align-self: flex-end;\n            text-align: right;\n        }\n        .message.speaker-narrator {\n            align-self: center;\n            max-width: 95%;\n            text-align: center;\n            margin-bottom: 16px;\n        }\n        .msg-speaker {\n            font-size: 0.68rem;\n            letter-spacing: 0.18em;\n            color: var(--accent);\n            margin-bottom: 6px;\n            font-weight: 500;\n            opacity: 0.8;\n        }\n        .msg-speaker.player {\n            color: var(--text-muted);\n        }\n        .msg-speaker.narrator {\n            color: var(--text-muted);\n            font-style: italic;\n            letter-spacing: 0.1em;\n        }\n        .msg-text {\n            font-size: 0.92rem;\n            line-height: 1.9;\n            color: var(--text-primary);\n            word-break: break-word;\n            letter-spacing: 0.01em;\n        }\n        .msg-text.narrator {\n            color: var(--text-secondary);\n            font-size: 0.85rem;\n            font-style: italic;\n            line-height: 2;\n        }\n        .msg-text.player {\n            color: #b8a8d0;\n        }\n        .message.speaker-yzb .msg-text {\n            background: rgba(255, 255, 255, 0.03);\n            padding: 12px 16px;\n            border-radius: 4px 16px 16px 16px;\n            border-left: 3px solid var(--accent);\n            display: inline-block;\n        }\n        .message.speaker-player .msg-text {\n            background: rgba(180, 160, 220, 0.08);\n            padding: 12px 16px;\n            border-radius: 16px 4px 16px 16px;\n            display: inline-block;\n        }\n\n        .action-tag {\n            font-family: var(--font-mono);\n            font-size: 0.65rem;\n            color: var(--text-muted);\n            letter-spacing: 0.08em;\n            margin-top: 4px;\n            opacity: 0.7;\n        }\n\n        /* 选项区 */\n        .choices-area {\n            flex-shrink: 0;\n            padding: 12px 16px calc(16px + env(safe-area-inset-bottom));\n            display: flex;\n            flex-direction: column;\n            gap: 8px;\n            background: linear-gradient(to top, rgba(10, 10, 20, 0.9) 40%, transparent);\n        }\n        .choice-btn {\n            width: 100%;\n            text-align: left;\n            padding: 14px 18px;\n            font-size: 0.85rem;\n            line-height: 1.6;\n            font-family: var(--font-sans);\n            letter-spacing: 0.02em;\n            background: var(--bg-card);\n            border: 1px solid var(--border-subtle);\n            border-radius: 12px;\n            color: var(--text-primary);\n            cursor: pointer;\n            transition: all 0.35s var(--ease-out);\n            animation: choiceIn 0.5s var(--ease-out) both;\n            position: relative;\n            overflow: hidden;\n        }\n        .choice-btn::after {\n            content: '';\n            position: absolute;\n            inset: 0;\n            background: linear-gradient(135deg, transparent 40%, var(--glow-color));\n            opacity: 0;\n            transition: opacity 0.35s;\n        }\n        .choice-btn:hover {\n            border-color: var(--border-glow);\n            background: rgba(255, 255, 255, 0.06);\n        }\n        .choice-btn:hover::after {\n            opacity: 1;\n        }\n        .choice-btn:active {\n            transform: scale(0.98);\n            background: rgba(255, 255, 255, 0.08);\n        }\n        @keyframes choiceIn {\n            from { opacity: 0; transform: translateY(16px) scale(0.96); }\n            to { opacity: 1; transform: translateY(0) scale(1); }\n        }\n        .choice-btn .choice-index {\n            font-family: var(--font-mono);\n            font-size: 0.6rem;\n            color: var(--accent);\n            letter-spacing: 0.2em;\n            display: block;\n            margin-bottom: 4px;\n            opacity: 0.7;\n        }\n\n        /* 结局 */\n        #screen-end {\n            align-items: center;\n            justify-content: center;\n            padding: 24px;\n        }\n        .end-card {\n            width: 100%;\n            max-width: 440px;\n            padding: 36px 28px 28px;\n            background: var(--bg-card);\n            border: 1px solid var(--border-subtle);\n            border-radius: 20px;\n            text-align: center;\n            box-shadow: var(--shadow-deep);\n            backdrop-filter: blur(20px);\n        }\n        .end-tag {\n            font-family: var(--font-mono);\n            font-size: 0.58rem;\n            letter-spacing: 0.5em;\n            color: var(--accent);\n            margin-bottom: 16px;\n            text-transform: uppercase;\n        }\n        .end-title {\n            font-size: clamp(1.5rem, 5vw, 2rem);\n            font-weight: 200;\n            letter-spacing: 0.06em;\n            color: var(--text-primary);\n            margin-bottom: 20px;\n        }\n        .end-text {\n            font-size: 0.88rem;\n            line-height: 2;\n            color: var(--text-secondary);\n            margin-bottom: 26px;\n            text-align: left;\n            letter-spacing: 0.02em;\n        }\n        .end-stats {\n            display: flex;\n            gap: 16px;\n            justify-content: center;\n            flex-wrap: wrap;\n            margin-bottom: 26px;\n            padding-top: 18px;\n            border-top: 1px solid var(--border-subtle);\n        }\n        .end-stat {\n            font-size: 0.65rem;\n            letter-spacing: 0.1em;\n            color: var(--text-muted);\n            text-align: center;\n        }\n        .end-stat b {\n            display: block;\n            font-size: 1.2rem;\n            color: var(--accent);\n            font-family: var(--font-mono);\n            margin-top: 4px;\n        }\n\n        /* Toast */\n        #toast {\n            position: fixed;\n            bottom: 16%;\n            left: 50%;\n            transform: translate(-50%, 12px);\n            padding: 10px 22px;\n            font-size: 0.8rem;\n            letter-spacing: 0.08em;\n            background: rgba(30, 30, 50, 0.95);\n            border: 1px solid var(--border-subtle);\n            border-radius: 99px;\n            color: var(--text-primary);\n            opacity: 0;\n            pointer-events: none;\n            transition: all 0.4s var(--ease-out);\n            z-index: 99;\n            white-space: nowrap;\n            backdrop-filter: blur(12px);\n        }\n        #toast.visible {\n            opacity: 1;\n            transform: translate(-50%, 0);\n        }\n\n        /* 滚动条 */\n        .message-log::-webkit-scrollbar {\n            width: 2px;\n        }\n        .message-log::-webkit-scrollbar-track {\n            background: transparent;\n        }\n        .message-log::-webkit-scrollbar-thumb {\n            background: rgba(255, 255, 255, 0.1);\n            border-radius: 99px;\n        }\n\n        @media (max-width: 420px) {\n            .game-header { padding: 10px 12px 8px; }\n            .message-log { padding: 14px 12px 6px; }\n            .choices-area { padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); }\n            .choice-btn { padding: 12px 14px; font-size: 0.8rem; }\n            .msg-text { font-size: 0.85rem; }\n            .start-card { padding: 24px 18px 20px; }\n        }\n    </style>\n</head>\n<body data-state=\"warm\">\n    <div id=\"app\">\n\n        <!-- 序章过渡 -->\n        <div id=\"screen-prologue\" class=\"screen\">\n            <div id=\"prologue-text\"></div>\n        </div>\n\n        <!-- 开始页面 -->\n        <div id=\"screen-start\" class=\"screen\">\n            <div class=\"start-card\">\n                <div class=\"start-label\">TEMPERATURE · SIMULATOR</div>\n                <h1 class=\"start-title\">衡温者</h1>\n                <p class=\"start-sub\">他是那个永远笑着、却从不让你靠近的人。<br>表面温和，内里是一本谁也没看过的账。</p>\n                <div class=\"form-group\">\n                    <label class=\"form-label\">你的名字</label>\n                    <input id=\"input-name\" type=\"text\" maxlength=\"8\" placeholder=\"输入你的名字\" autocomplete=\"off\">\n                </div>\n                <div class=\"form-group\">\n                    <label class=\"form-label\">你的称呼</label>\n                    <div class=\"gender-row\" id=\"gender-row\">\n                        <button class=\"gender-btn\" data-gender=\"姐姐\">姐姐</button>\n                        <button class=\"gender-btn active\" data-gender=\"同学\">同学</button>\n                        <button class=\"gender-btn\" data-gender=\"哥哥\">哥哥</button>\n                    </div>\n                </div>\n                <button id=\"btn-start\" class=\"btn-primary\">开 始 游 戏</button>\n                <button id=\"btn-continue\" class=\"btn-secondary\" style=\"display:none;\">读取存档</button>\n                <p class=\"start-note\" id=\"start-continue-hint\">信任是权限，不是情绪。<br>他不会当场爆炸，但会慢慢消失。</p>\n            </div>\n        </div>\n\n        <!-- 游戏页面 -->\n        <div id=\"screen-game\" class=\"screen\">\n            <div class=\"game-header\">\n                <div class=\"status-bar\">\n                    <div class=\"stat-item\">\n                        <div class=\"stat-label\">好感度 <span class=\"stat-value\" id=\"v-fav\">0</span></div>\n                        <div class=\"stat-track\"><div class=\"stat-fill\" id=\"fill-fav\" style=\"width:0%;\"></div></div>\n                    </div>\n                    <div class=\"stat-item\">\n                        <div class=\"stat-label\">信任度 <span class=\"stat-value\" id=\"v-trust\">0</span></div>\n                        <div class=\"stat-track\"><div class=\"stat-fill\" id=\"fill-trust\" style=\"width:0%;\"></div></div>\n                    </div>\n                    <div class=\"stat-item\">\n                        <div class=\"stat-label\">底线值 <span class=\"stat-value\" id=\"v-boundary\">100</span></div>\n                        <div class=\"stat-track\"><div class=\"stat-fill\" id=\"fill-boundary\" style=\"width:100%;\"></div></div>\n                    </div>\n                </div>\n                <div style=\"display:flex;gap:18px;align-items:center;flex-wrap:wrap;\">\n                    <div class=\"violation-indicator\" title=\"越界次数\">\n                        越界\n                        <span id=\"violation-dots\">\n                            <span class=\"violation-dot\"></span><span class=\"violation-dot\"></span><span class=\"violation-dot\"></span>\n                        </span>\n                    </div>\n                    <div class=\"ledger-indicator\" title=\"暗账本\">\n                        暗账\n                        <span id=\"ledger-dots\">\n                            <span class=\"ledger-dot\"></span><span class=\"ledger-dot\"></span><span class=\"ledger-dot\"></span>\n                        </span>\n                    </div>\n                </div>\n                <div class=\"toolbar\">\n                    <button id=\"btn-save\">存档</button>\n                    <button id=\"btn-load\">读档</button>\n                    <button id=\"btn-restart\">重开</button>\n                </div>\n            </div>\n            <div class=\"game-body\">\n                <div class=\"message-log\" id=\"message-log\"></div>\n                <div class=\"choices-area\" id=\"choices-area\"></div>\n            </div>\n        </div>\n\n        <!-- 结局页面 -->\n        <div id=\"screen-end\" class=\"screen\">\n            <div class=\"end-card\">\n                <div class=\"end-tag\">E N D I N G</div>\n                <h2 class=\"end-title\" id=\"end-title\">结局</h2>\n                <div class=\"end-text\" id=\"end-text\"></div>\n                <div class=\"end-stats\" id=\"end-stats\"></div>\n                <button id=\"btn-again\" class=\"btn-primary\">重新开始</button>\n            </div>\n        </div>\n\n        <!-- Toast -->\n        <div id=\"toast\"></div>\n    </div>\n\n    <script>\n        (function() {\n            'use strict';\n\n            /* =========================================================\n               剧 情 数 据\n               ========================================================= */\n            const SCENES = {\n                scene_01: {\n                    id: 'scene_01', phase: 1, next: 'scene_02',\n                    messages: [\n                        { type: 'narrator', text: '开学第三周。你从后门走进教室，听见有人在大声调侃。' },\n                        { type: 'narrator', text: '「姚智博，你那个小组作业又被挂名了吧？怎么不生气啊？」' },\n                        { type: 'narrator', text: '他坐在倒数第二排靠窗的位置，白色卫衣的袖子挽到小臂，正低头看手机。' },\n                        { type: 'yzb', text: '「嗯，习惯了。」' },\n                        { type: 'narrator', text: '他抬起头，冲你这边扫了一眼，很轻地笑了一下。那个笑容里什么温度都没有。' }\n                    ],\n                    choices: [\n                        {\n                            text: '公开维护他',\n                            effects: { fav: 5, trust: 2, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你开口说：报告的内容我也看过，确实是我和他一起做的。' },\n                                { type: 'yzb', text: '姚智博看了你一眼。' },\n                                { type: 'yzb', text: '「……谢谢。」' },\n                                { type: 'narrator', text: '他低下头，过了几秒，把手机屏幕朝你这边偏了偏。是一张你们小组作业的笔记截图。' },\n                                { type: 'yzb', text: '「下次要资料，直接问我要。」（他把手机塞回卫衣口袋，耳根有点红）' }\n                            ]\n                        },\n                        {\n                            text: '稍微调侃一下',\n                            effects: { fav: 0, trust: 0, boundary: 0, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你笑着接了一句：「智博就是太好说话啦，被欺负了也不吭声。」' },\n                                { type: 'yzb', text: '他跟着笑了一下，没说话。' },\n                                { type: 'narrator', text: '晚自习后，你的手机亮了一下。一条微信。' },\n                                { type: 'yzb', text: '「那个玩笑，其实我不太喜欢。不过没事。」' },\n                                { type: 'narrator', text: '语气很轻。但你知道，有些事他记下了。' }\n                            ]\n                        },\n                        {\n                            text: '当众拆台',\n                            effects: { fav: -8, trust: -5, boundary: -15, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你说：「姚智博，你那个方案里还有三处数据是错的，你怎么好意思挂名？」' },\n                                { type: 'narrator', text: '教室瞬间安静。他脸上的笑意凝固了半秒，然后慢慢收回去。' },\n                                { type: 'yzb', text: '「……哦。」' },\n                                { type: 'narrator', text: '他平静地看了你一眼，低下头继续看手机。' },\n                                { type: 'narrator', text: '但那天下午，他把自己的资料从共享文档里全部退出了。' }\n                            ]\n                        },\n                        {\n                            text: '沉默',\n                            effects: { fav: 1, trust: 0, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你什么都没说。他也没指望谁。' },\n                                { type: 'yzb', text: '（翻书的动作很轻，像什么都没听见）' },\n                                { type: 'narrator', text: '你们之间隔了两个座位，沉默像一道透明的墙。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_02: {\n                    id: 'scene_02', phase: 1, next: 'scene_03',\n                    messages: [\n                        { type: 'narrator', text: '小组汇报那天，另一个组员把所有功劳都揽到自己身上。' },\n                        { type: 'narrator', text: '姚智博坐在旁边，表情很平。你注意到他放在桌下的手慢慢攥紧了，又松开。' },\n                        { type: 'yzb', text: '（笑）「没事，资料主要也不是我整理的。」' },\n                        { type: 'narrator', text: '但你见过他半夜两点还在改PPT，眼下的青黑像是化开的水墨。' }\n                    ],\n                    choices: [\n                        {\n                            text: '补一句：资料主要是我和他整理的',\n                            effects: { fav: 6, trust: 5, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '讲台上安静了一下。那个组员讪讪地闭了嘴。' },\n                                { type: 'yzb', text: '姚智博：“……”' },\n                                { type: 'narrator', text: '结束后，他从前排绕过来，在你旁边停了一下。' },\n                                { type: 'yzb', text: '「……晚上图书馆，老位置。请你喝咖啡。」' },\n                                { type: 'narrator', text: '他的语气很淡，但离开时耳朵上那点红色，一路蔓延到了领口。' }\n                            ]\n                        },\n                        {\n                            text: '装作没听见',\n                            effects: { fav: -3, trust: -2, boundary: 0, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你低头整理笔记。' },\n                                { type: 'yzb', text: '姚智博笑了一下，没再说什么。' },\n                                { type: 'narrator', text: '那天之后，他做PPT的文档只分享给了另一个组员。你的权限被取消了。' },\n                                { type: 'narrator', text: '没有一句质问。就像什么都没发生过。' }\n                            ]\n                        },\n                        {\n                            text: '也抢一部分功劳',\n                            effects: { fav: -10, trust: -8, boundary: -20, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你站起来补充：其实里面有几个板块是我做的。' },\n                                { type: 'narrator', text: '教室里出现了一阵尴尬的安静。姚智博看了你一眼，慢慢把手机翻过去扣在桌上。' },\n                                { type: 'yzb', text: '「……挺好。」' },\n                                { type: 'narrator', text: '他没有当场发火。只是之后的每次小组讨论，他都坐到了离你最远的那个位置。' }\n                            ]\n                        },\n                        {\n                            text: '课后私下跟他说：我都知道',\n                            effects: { fav: 5, trust: 4, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「……不用你操心。」' },\n                                { type: 'narrator', text: '他别开脸。过了一阵，才补了一句。' },\n                                { type: 'yzb', text: '「但谢了。」' },\n                                { type: 'narrator', text: '那天晚自习，他把整理好的笔记推到你桌上。上面用铅笔圈出了你之前问过他的所有重点。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_03: {\n                    id: 'scene_03', phase: 1, next: 'scene_04',\n                    messages: [\n                        { type: 'narrator', text: '图书馆闭馆前一个小时，你在老位置看见他。' },\n                        { type: 'narrator', text: '他的桌面上摊着笔记本和电脑，左手拿着笔，右手关节抵着下巴，像是在发消息。' },\n                        { type: 'narrator', text: '你走过去坐下。他抬头看你，眼睛在暖黄的灯下显得很浅。' },\n                        { type: 'yzb', text: '「来了。」' },\n                        { type: 'narrator', text: '手机屏幕还亮着。是一个聊天窗口，备注只有一个句号。' }\n                    ],\n                    choices: [\n                        {\n                            text: '尊重他的空间，安静坐下学习',\n                            effects: { fav: 5, trust: 6, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你们各自埋头。中间只有笔尖划过纸面的沙沙声。' },\n                                { type: 'yzb', text: '（把手机反扣在桌上）「……你复习到哪了？」' },\n                                { type: 'narrator', text: '他先开了口。这是你们认识以来，他第一次主动问你学习之外的事情。' }\n                            ]\n                        },\n                        {\n                            text: '凑过去看他的手机',\n                            effects: { fav: -10, trust: -12, boundary: -20, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你笑着说：「看什么呢，这么入神？」' },\n                                { type: 'yzb', text: '他不动声色地把手机锁屏，屏幕朝下扣在桌上。' },\n                                { type: 'yzb', text: '「没什么。」' },\n                                { type: 'narrator', text: '他的语气没有任何波动。但之后一个小时，他都没有再和你说一句话。' }\n                            ]\n                        },\n                        {\n                            text: '分享你的笔记给他',\n                            effects: { fav: 7, trust: 5, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你把笔记本推过去：「你上次说这块知识点乱，我重新整理了一遍。」' },\n                                { type: 'yzb', text: '他盯着你的笔记看了几秒。' },\n                                { type: 'yzb', text: '「……你挺会整理。」' },\n                                { type: 'narrator', text: '他把自己随身的日程本打开，撕下最后一页，写了一串字母和数字推给你。' },\n                                { type: 'yzb', text: '「我的个人图书馆账号。分你一半时间。」' }\n                            ]\n                        },\n                        {\n                            text: '约他下课一起走',\n                            effects: { fav: 5, trust: 2, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「……行。」' },\n                                { type: 'narrator', text: '他说行的时候，眼睛没有抬。但收拾书包的速度，明显快了一点。' },\n                                { type: 'narrator', text: '下楼时他走在前面，到了门口突然停下，回头等你。光线把他的影子拉得很长。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_04: {\n                    id: 'scene_04', phase: 2, next: 'scene_05',\n                    messages: [\n                        { type: 'narrator', text: '晚上十一点。你给他发了一条消息，问他一道题。' },\n                        { type: 'narrator', text: '十分钟过去，他既没回，状态却一直显示在线。' },\n                        { type: 'narrator', text: '你看着对话框上方那个忽明忽暗的字样。' },\n                        { type: 'yzb', text: '（凌晨零点十七分）「刚才在忙。」' },\n                        { type: 'narrator', text: '四个字，干净利落。没有解释更多。' }\n                    ],\n                    choices: [\n                        {\n                            text: '「没事，我就是问问。别太累。」',\n                            effects: { fav: 8, trust: 10, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '他沉默了一会儿。' },\n                                { type: 'yzb', text: '「……不是故意不回你。」' },\n                                { type: 'yzb', text: '「家里的事。不方便说。」' },\n                                { type: 'narrator', text: '这是他第一次向你提到家里。虽然只有四个字。但你已经能感觉到，他松了一点。' }\n                            ]\n                        },\n                        {\n                            text: '「你干嘛去了？怎么现在才回？」',\n                            effects: { fav: -5, trust: -4, boundary: 0, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'yzb', text: '「刚才在忙。」' },\n                                { type: 'narrator', text: '没有更多了。' },\n                                { type: 'narrator', text: '你等了很久，屏幕再也没亮起来。下次你再发消息，他的回复从三个字变成了一个字：「嗯」。' }\n                            ]\n                        },\n                        {\n                            text: '连续发好几条消息追问',\n                            effects: { fav: -6, trust: -8, boundary: -10, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你连着发了五条。他一条都没回。' },\n                                { type: 'narrator', text: '直到第二天中午，你才收到一句。' },\n                                { type: 'yzb', text: '「知道了。以后不用这样找我。」' },\n                                { type: 'narrator', text: '语气平得没有一丝温度。你感觉有些东西在退潮。' }\n                            ]\n                        },\n                        {\n                            text: '不再追问，转移话题',\n                            effects: { fav: 3, trust: 4, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你发了一张白天拍到的有趣照片。' },\n                                { type: 'yzb', text: '「……好笑。」' },\n                                { type: 'narrator', text: '就两个字。但五分钟后，他又补了一句。' },\n                                { type: 'yzb', text: '「明天帮我看看数学。」' }\n                            ]\n                        }\n                    ]\n                },\n                scene_05: {\n                    id: 'scene_05', phase: 2, next: 'scene_06',\n                    messages: [\n                        { type: 'narrator', text: '你不小心听见他的室友在走廊上说：' },\n                        { type: 'narrator', text: '「姚智博那个人，根本没他表面上那么温和。他把我们几个人的事，全记在一个小本子上。」' },\n                        { type: 'narrator', text: '很快又有人接话：「对对对，听说他还给身边所有人分了组，谁越界了就踢出去。」' },\n                        { type: 'narrator', text: '你站在原地，看见他从前面的拐角走出来。' },\n                        { type: 'yzb', text: '（低头，肩膀很轻微地绷了一下）' }\n                    ],\n                    choices: [\n                        {\n                            text: '等他室友走后，对他说：我没把这些话当真',\n                            effects: { fav: 8, trust: 15, boundary: 5, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '他停下脚步，背对着你站了很久。' },\n                                { type: 'yzb', text: '「……你信吗？」' },\n                                { type: 'narrator', text: '他的声音很轻，像是怕听到答案。' },\n                                { type: 'yzb', text: '「我确实会记一些事。因为……我以前信错过人。」' },\n                                { type: 'narrator', text: '他说完，把手机解锁，点开一个你从未见过的加密文件。里面只有一行字：「今天她帮了我。记。」' }\n                            ]\n                        },\n                        {\n                            text: '假装什么都没听见',\n                            effects: { fav: -2, trust: -3, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你们擦肩而过的时候，他看了你一眼。' },\n                                { type: 'yzb', text: '（什么也没说）' },\n                                { type: 'narrator', text: '那一眼很短。但你知道，他把你的沉默一起记下了。' }\n                            ]\n                        },\n                        {\n                            text: '追问你：他们说的是真的吗？',\n                            effects: { fav: -8, trust: -12, boundary: -10, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你问得有些急。' },\n                                { type: 'yzb', text: '「如果是真的，你打算怎样？」' },\n                                { type: 'narrator', text: '他反问你。眼睛没有躲。' },\n                                { type: 'yzb', text: '「我在你心里，就是那种人吗。」' },\n                                { type: 'narrator', text: '他的语气甚至没有起伏。但你知道，这是他在告别。' }\n                            ]\n                        },\n                        {\n                            text: '对他说：我相信你，不问道理',\n                            effects: { fav: 6, trust: 10, boundary: 3, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「……你这个人。」' },\n                                { type: 'narrator', text: '他笑了一下，很轻，像松了一口气。' },\n                                { type: 'yzb', text: '「算了。有些事我以后会告诉你。不是现在。」' },\n                                { type: 'narrator', text: '他往你这边靠近了半步。这是你们之间最近的一次距离。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_06: {\n                    id: 'scene_06', phase: 2, next: 'scene_07',\n                    messages: [\n                        { type: 'narrator', text: '傍晚的食堂。你远远看见他和一个女生坐在一起。' },\n                        { type: 'narrator', text: '两人隔着一张餐桌，女生把奶茶往他那边推了推。他笑了一下。' },\n                        { type: 'narrator', text: '你端着餐盘，坐在了靠窗的位置。他看见了你，动作顿了一下。' },\n                        { type: 'yzb', text: '（和女生说了句什么，然后往你这边看过来）' }\n                    ],\n                    choices: [\n                        {\n                            text: '装作不在意的样子，打声招呼',\n                            effects: { fav: 3, trust: 2, boundary: 0, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你笑着挥了挥手。他点点头。' },\n                                { type: 'yzb', text: '「……你一个人？」' },\n                                { type: 'narrator', text: '他站起来，把那个女生留在原地。' },\n                                { type: 'yzb', text: '（坐到你对面）「她只是社团的。别多想。」' },\n                                { type: 'narrator', text: '他在解释。很轻，但确实是在解释。' }\n                            ]\n                        },\n                        {\n                            text: '冷着脸走开',\n                            effects: { fav: -7, trust: -5, boundary: 0, violation: 0, ledger: 2 },\n                            replies: [\n                                { type: 'narrator', text: '你径直从他们旁边走过去，没有停。' },\n                                { type: 'narrator', text: '你听见身后椅子拉开的声音。' },\n                                { type: 'yzb', text: '「……你站住。」' },\n                                { type: 'narrator', text: '他的语气很平。但这是他第一次在公开场合叫住你。' },\n                                { type: 'yzb', text: '「你生气归生气。说清楚。」' }\n                            ]\n                        },\n                        {\n                            text: '直接问他：你俩挺熟啊？',\n                            effects: { fav: -5, trust: -6, boundary: -5, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'yzb', text: '「你注意得挺多。」' },\n                                { type: 'narrator', text: '他没有否认。也没有肯定。' },\n                                { type: 'yzb', text: '「我交朋友，不需要向谁汇报吧。」' },\n                                { type: 'narrator', text: '他低头继续吃饭。但那一整个晚上，他都没有再看你一眼。' }\n                            ]\n                        },\n                        {\n                            text: '信任他，自己找地方坐下',\n                            effects: { fav: 10, trust: 12, boundary: 2, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你坐下后，他过了几分钟就过来了。' },\n                                { type: 'yzb', text: '「那个位置太吵。过来。」' },\n                                { type: 'narrator', text: '他把书包放在你对面，人坐了下来。' },\n                                { type: 'yzb', text: '（抬头）「以后你过来，提前说一声。我等你。」' }\n                            ]\n                        }\n                    ]\n                },\n                scene_07: {\n                    id: 'scene_07', phase: 3, next: 'scene_08',\n                    messages: [\n                        { type: 'narrator', text: '秋末。天台风很大。' },\n                        { type: 'narrator', text: '他约你来的。这是他第一次主动把你叫到没人的地方。' },\n                        { type: 'yzb', text: '「有件事，我想问你。」' },\n                        { type: 'narrator', text: '他站在栏杆旁边，背对着楼下的车流。' },\n                        { type: 'yzb', text: '「我在你眼里，是不是很好说话，很能忍，什么事都讲一遍就过去了？」' }\n                    ],\n                    choices: [\n                        {\n                            text: '认真听他说完，承认自己也有错',\n                            effects: { fav: 15, trust: 12, boundary: 10, violation: 0, ledger: -1 },\n                            replies: [\n                                { type: 'narrator', text: '你沉默了很久，说：我知道之前有些事是我越界了。' },\n                                { type: 'narrator', text: '他转过身，没看你。风吹起他卫衣的帽子。' },\n                                { type: 'yzb', text: '「……我不喜欢被架住。当面笑，回家才敢松口气。我有时候也觉得自己很没意思。」' },\n                                { type: 'narrator', text: '他第一次这样说。' },\n                                { type: 'yzb', text: '「别人怎么看我无所谓。我只想知道，你怎么想。」' },\n                                { type: 'narrator', text: '天台的风很冷。但他的眼睛是暖的。' }\n                            ]\n                        },\n                        {\n                            text: '说：你想太多了，我没有那个意思',\n                            effects: { fav: -8, trust: -10, boundary: -15, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'yzb', text: '「你看，你永远说我想太多。」' },\n                                { type: 'narrator', text: '他笑了。那个笑容近乎透明。' },\n                                { type: 'yzb', text: '「算了。有些事不是靠解释能解决的。」' },\n                                { type: 'narrator', text: '他往天台门口走。经过你时，脚步顿了一下。' },\n                                { type: 'yzb', text: '「……先这样吧。」' }\n                            ]\n                        },\n                        {\n                            text: '保持沉默',\n                            effects: { fav: -3, trust: -3, boundary: 0, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你们就这样站了很久。' },\n                                { type: 'yzb', text: '“嗯。”' },\n                                { type: 'narrator', text: '他把卫衣帽子拉起来。' },\n                                { type: 'yzb', text: '「我先走了。你……想好了再说吧。」' },\n                                { type: 'narrator', text: '他走后，你发现栏杆边有半瓶没喝完的水，还是温的。' }\n                            ]\n                        },\n                        {\n                            text: '给他一个拥抱',\n                            effects: { fav: 8, trust: 6, boundary: 5, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你没有说话，只是上前抱住了他。' },\n                                { type: 'narrator', text: '他僵住了。像被冻在原地。' },\n                                { type: 'yzb', text: '「……放开。」' },\n                                { type: 'narrator', text: '但他的手慢慢抓住了你的衣角。很轻，很慢。' },\n                                { type: 'yzb', text: '「（声音闷在卫衣里）你别以为这样我就能算了。」' }\n                            ]\n                        }\n                    ]\n                },\n                scene_08: {\n                    id: 'scene_08', phase: 3, next: 'scene_09',\n                    messages: [\n                        { type: 'narrator', text: '天台风波还没过去。一些关于他的传言在系里散开。' },\n                        { type: 'narrator', text: '「小团体里的笑面虎」「表面温和私下算计」「和异性不清不楚」……' },\n                        { type: 'narrator', text: '他走在路上，有人故意绕开。' },\n                        { type: 'yzb', text: '（低头看手机，没什么表情）' },\n                        { type: 'narrator', text: '你看见有人在班级群里阴阳怪气地发了一句什么。他看了一眼，关掉了屏幕。' }\n                    ],\n                    choices: [\n                        {\n                            text: '公开澄清，说你不是他们说的那样',\n                            effects: { fav: 10, trust: 10, boundary: 5, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你在群里发了一段话。很长，最后一句是：我比他们更了解你。' },\n                                { type: 'narrator', text: '他没有回复。' },\n                                { type: 'narrator', text: '但那天放学，他第一次在教学楼门口等你。' },\n                                { type: 'yzb', text: '「……那种话，你不用说。我知道自己是什么人。」' },\n                                { type: 'narrator', text: '说完，他把一个U盘塞给你。里面是他所有课业笔记。' }\n                            ]\n                        },\n                        {\n                            text: '陪在他身边，不离开',\n                            effects: { fav: 12, trust: 14, boundary: 6, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你没有多说。只是坐到他旁边，和他一起沉默。' },\n                                { type: 'yzb', text: '『（过了很久）』' },\n                                { type: 'yzb', text: '「……你为什么不走。」' },\n                                { type: 'narrator', text: '他的声音很轻，轻得像一声叹息。' },\n                                { type: 'yzb', text: '「我这种人，身边留不住人的。」' },\n                                { type: 'narrator', text: '你握住他的手。他的手指很凉，但没有抽开。' }\n                            ]\n                        },\n                        {\n                            text: '保持距离，避免被牵连',\n                            effects: { fav: -10, trust: -8, boundary: -5, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '你慢慢减少了和他一起走的次数。他什么也没问。' },\n                                { type: 'yzb', text: '（第二天见面，只是点点头）' },\n                                { type: 'narrator', text: '他朋友圈更新了一条，只有一张天台的照片。没有配字。' },\n                                { type: 'narrator', text: '你点了个赞。他没有回。' }\n                            ]\n                        },\n                        {\n                            text: '和其他人一起谈论这些传言',\n                            effects: { fav: -15, trust: -18, boundary: -25, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你承认，你那次也参与了那些聊天。' },\n                                { type: 'narrator', text: '他撞见了。他什么也没说。' },\n                                { type: 'yzb', text: '（看了你一眼，转身走了）' },\n                                { type: 'narrator', text: '从那天起，你从「可以说话的人」变成了「需要保持距离的人」。' },\n                                { type: 'narrator', text: '他没有拉黑你。但给你的备注，从名字变成了一个句号。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_09: {\n                    id: 'scene_09', phase: 3, next: 'scene_10',\n                    messages: [\n                        { type: 'narrator', text: '晚上十一点四十七分。你的手机响了。' },\n                        { type: 'narrator', text: '是他打来的。' },\n                        { type: 'yzb', text: '「……吵到你了吗？」' },\n                        { type: 'narrator', text: '他的声音有些哑。背景很安静，偶尔有风的声音。' },\n                        { type: 'yzb', text: '「我在学校南门。你要是有空，就过来。」' }\n                    ],\n                    choices: [\n                        {\n                            text: '立刻赶过去',\n                            effects: { fav: 15, trust: 15, boundary: 8, violation: 0, ledger: -1 },\n                            replies: [\n                                { type: 'narrator', text: '你到的时候，他坐在台阶上，卫衣帽子遮住了大半张脸。' },\n                                { type: 'yzb', text: '「……你怎么真来了。」' },\n                                { type: 'narrator', text: '他抬头看你。眼角有点红。' },\n                                { type: 'yzb', text: '「我就是……突然想听听你说话。」' },\n                                { type: 'narrator', text: '那晚你们聊了很多。从凌晨的月亮，聊到他高中时被最好的朋友背叛。' },\n                                { type: 'yzb', text: '「你是第一个。听完这些还没走的人。」' }\n                            ]\n                        },\n                        {\n                            text: '问他：你是不是遇到什么事了',\n                            effects: { fav: 8, trust: 8, boundary: 3, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「没什么。就是突然有点……不确定。」' },\n                                { type: 'narrator', text: '他停了一下。' },\n                                { type: 'yzb', text: '「不确定你有没有真的把我当回事。」' },\n                                { type: 'narrator', text: '你想回答。他却先接了一句。' },\n                                { type: 'yzb', text: '「算了。抽根烟就睡。你别担心。」' }\n                            ]\n                        },\n                        {\n                            text: '说：这么晚了你别闹了',\n                            effects: { fav: -5, trust: -6, boundary: -5, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '电话那边沉默了很久。' },\n                                { type: 'yzb', text: '「……好。你睡吧。」' },\n                                { type: 'narrator', text: '他挂了。' },\n                                { type: 'narrator', text: '那条通话记录，后来你再也没有打通过。' }\n                            ]\n                        },\n                        {\n                            text: '说：我在，你说',\n                            effects: { fav: 10, trust: 12, boundary: 4, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「……在就好。」' },\n                                { type: 'narrator', text: '他的呼吸声从电话那头传过来，很轻。' },\n                                { type: 'yzb', text: '「我好像，有点习惯有你在旁边了。」' },\n                                { type: 'narrator', text: '这句话说完，电话里出现了很长一段沉默。像是他把脸埋进了手臂里。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_10: {\n                    id: 'scene_10', phase: 4, next: 'scene_11',\n                    messages: [\n                        { type: 'narrator', text: '校园祭。你们班抽到了咖啡店，他负责账目。' },\n                        { type: 'narrator', text: '不知道谁把他的名字写在了道具板上，旁边画了个笑脸。' },\n                        { type: 'yzb', text: '（看见后，皱了皱眉，但没擦）' },\n                        { type: 'narrator', text: '有人起哄：「姚老板，别摆臭脸嘛，快给客人们笑一个！」' }\n                    ],\n                    choices: [\n                        {\n                            text: '帮他擦掉那块道具板',\n                            effects: { fav: 8, trust: 6, boundary: 3, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你走过去把那个笑脸擦掉，换成了一个小太阳。' },\n                                { type: 'yzb', text: '「……多此一举。」' },\n                                { type: 'narrator', text: '他的嘴角却很小地弯了一下。' },\n                                { type: 'yzb', text: '「不过，还行。」' }\n                            ]\n                        },\n                        {\n                            text: '说：姚老板本来就很可爱啊',\n                            effects: { fav: 6, trust: 3, boundary: -5, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '他脸上的表情僵了一下。' },\n                                { type: 'yzb', text: '「……这种话，别在这么多人的时候说。」' },\n                                { type: 'narrator', text: '他别过脸，耳朵有点红。' },\n                                { type: 'narrator', text: '但那天下午，他当着所有人的面，把他的第一杯咖啡递给了你。' }\n                            ]\n                        },\n                        {\n                            text: '当众故意开玩笑让他下不来台',\n                            effects: { fav: -12, trust: -10, boundary: -20, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你说了那句之后，周围的空气像是凝固了一秒。' },\n                                { type: 'yzb', text: '「……挺有意思。」' },\n                                { type: 'narrator', text: '他笑着回了一句，然后转身走了。' },\n                                { type: 'narrator', text: '一整天，他再没有和你说话。直到收拾东西时，他把你递来的纸盒推开了。' }\n                            ]\n                        },\n                        {\n                            text: '安静地陪他一起准备',\n                            effects: { fav: 7, trust: 8, boundary: 4, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你们一起清点备用金、折纸杯、写菜单。' },\n                                { type: 'yzb', text: '「……这上面写你名字吧。你字好看。」' },\n                                { type: 'narrator', text: '他教你做手冲。动作很慢，但每一步都会确认你有没有在听。' },\n                                { type: 'yzb', text: '「以后想喝，就自己冲。机器我借你。」' }\n                            ]\n                        }\n                    ]\n                },\n                scene_11: {\n                    id: 'scene_11', phase: 4, next: 'scene_12',\n                    messages: [\n                        { type: 'narrator', text: '期末考试前一周。你发现他连着三天都泡在图书馆。' },\n                        { type: 'narrator', text: '眼下有很重的青色，手边是第五杯黑咖啡。' },\n                        { type: 'yzb', text: '（抬头看你）「……你怎么还在。」' },\n                        { type: 'narrator', text: '桌上摊着三本笔记和一台不断震动的手机。他设了勿扰。' }\n                    ],\n                    choices: [\n                        {\n                            text: '陪他一起复习，不打扰',\n                            effects: { fav: 10, trust: 10, boundary: 3, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你坐到他旁边，打开自己的书。谁也没说话。' },\n                                { type: 'narrator', text: '一个小时后，他把一瓶热饮推到你手边。' },\n                                { type: 'yzb', text: '「你已经坐了一个小时了。换换脑子。」' },\n                                { type: 'narrator', text: '瓶子上贴着一张便签：「考完去吃校门口那家拉面。我请。」' }\n                            ]\n                        },\n                        {\n                            text: '给他施加压力，说：你考不过就完了',\n                            effects: { fav: -8, trust: -6, boundary: -5, violation: 0, ledger: 1 },\n                            replies: [\n                                { type: 'narrator', text: '他手里的笔停了一下。' },\n                                { type: 'yzb', text: '「……你这种话，我只会更烦。」' },\n                                { type: 'narrator', text: '他站起身，把书合上。' },\n                                { type: 'yzb', text: '「今天先到这吧。你回吧。」' }\n                            ]\n                        },\n                        {\n                            text: '约他一起出去透透气',\n                            effects: { fav: 7, trust: 5, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「不去。没时间。」' },\n                                { type: 'narrator', text: '他顿了顿。' },\n                                { type: 'yzb', text: '「……十五分钟。就十五分钟。」' },\n                                { type: 'narrator', text: '他跟着你走到操场边，深深吸了一口气。' },\n                                { type: 'yzb', text: '「……你这个人，挺会逼人休息的。」' }\n                            ]\n                        },\n                        {\n                            text: '说：你帮我补课，我给你带吃的',\n                            effects: { fav: 5, trust: 3, boundary: 0, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'yzb', text: '「成交。」' },\n                                { type: 'narrator', text: '他连犹豫都没有。' },\n                                { type: 'yzb', text: '「不过吃的得是我选的。你上次那家店不行。」' },\n                                { type: 'narrator', text: '你看他弯起眼睛。那笑容只有一点点，但很真。' }\n                            ]\n                        }\n                    ]\n                },\n                scene_12: {\n                    id: 'scene_12', phase: 4, next: null,\n                    messages: [\n                        { type: 'narrator', text: '考试结束。晚上下起了雨。' },\n                        { type: 'narrator', text: '你走出教学楼的时候，看见他站在玻璃门旁，手里拿着两把伞。' },\n                        { type: 'yzb', text: '「……没料到会下。多拿了一把。」' },\n                        { type: 'narrator', text: '他的肩膀被风吹得有点湿。' },\n                        { type: 'yzb', text: '「陪我走一段吧。就一段。」' },\n                        { type: 'narrator', text: '雨声很大。他把伞往你那边倾了倾。' }\n                    ],\n                    choices: [\n                        {\n                            text: '「你在我这里，是最高权限。」',\n                            effects: { fav: 15, trust: 12, boundary: 8, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '他停下了。' },\n                                { type: 'yzb', text: '「……这种话，不要随便说。」' },\n                                { type: 'narrator', text: '他伸出一只手。指尖碰到你的，然后慢慢扣住了。' },\n                                { type: 'yzb', text: '「以后，你在我这里的权限也是最高的。」' },\n                                { type: 'narrator', text: '他的声音被雨声打湿，却很清晰。' },\n                                { type: 'yzb', text: '「……你叫我的时候，我会在。」' }\n                            ]\n                        },\n                        {\n                            text: '「我有个要求，你以后不许和异性单独吃饭。」',\n                            effects: { fav: -10, trust: -15, boundary: -35, violation: 1, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '他说这话的时候，你看到他的表情一点一点凉下去。' },\n                                { type: 'yzb', text: '「这个要求我不接受。」' },\n                                { type: 'narrator', text: '他把伞往回收了收。' },\n                                { type: 'yzb', text: '「我不喜欢你用这种话要求我。人和人的关系，不是这样算的。」' },\n                                { type: 'narrator', text: '他转身走进雨里，没有再回头。' }\n                            ]\n                        },\n                        {\n                            text: '安静地走完这段路',\n                            effects: { fav: 10, trust: 15, boundary: 5, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '你们并肩走。谁也没先开口。' },\n                                { type: 'yzb', text: '『（走到宿舍楼下）』' },\n                                { type: 'yzb', text: '「……就到这吧。」' },\n                                { type: 'narrator', text: '他把你送到门口，没有收伞。' },\n                                { type: 'yzb', text: '「你们宿舍门禁早。我看着你进去。」' },\n                                { type: 'narrator', text: '他站在台阶下，伞沿挡着雨。你回头时，他还在。' }\n                            ]\n                        },\n                        {\n                            text: '说：我们到底是什么关系？',\n                            effects: { fav: 5, trust: 3, boundary: -3, violation: 0, ledger: 0 },\n                            replies: [\n                                { type: 'narrator', text: '他看了你很久。' },\n                                { type: 'yzb', text: '「你希望是什么？」' },\n                                { type: 'narrator', text: '雨顺着伞骨滑下来。' },\n                                { type: 'yzb', text: '「我从不随便把人放进某个分组。你能走到这里，自己应该明白。」' },\n                                { type: 'narrator', text: '他说完，把伞塞进你手里。' },\n                                { type: 'yzb', text: '「下次别淋雨。我联系得上你。」' }\n                            ]\n                        }\n                    ]\n                }\n            };\n\n            /* =========================================================\n               游 戏 状 态\n               ========================================================= */\n            const SAVE_KEY = 'hengwen_sim_v1';\n            const TYPE_SPEED = 18;\n\n            let state = {\n                name: '',\n                gender: '同学',\n                fav: 0,\n                trust: 0,\n                boundary: 100,\n                violation: 0,\n                ledger: 0,\n                sceneId: 'scene_01',\n                scenePhase: 1,\n                visitedScenes: []\n            };\n\n            let token = 0;\n            let skipFlag = false;\n            let busy = false;\n            let currentScene = null;\n\n            const $ = (id) => document.getElementById(id);\n            const body = document.body;\n            const screenStart = $('screen-start');\n            const screenGame = $('screen-game');\n            const screenEnd = $('screen-end');\n            const screenPrologue = $('screen-prologue');\n            const logEl = $('message-log');\n            const choicesEl = $('choices-area');\n            const toastEl = $('toast');\n            let toastTimer = null;\n\n            /* =========================================================\n               工 具 函 数\n               ========================================================= */\n            function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }\n            function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }\n            function withName(text) { return String(text).replace(/\\{name\\}/g, state.name || '你'); }\n            function showToast(msg) {\n                toastEl.textContent = msg;\n                toastEl.classList.add('visible');\n                clearTimeout(toastTimer);\n                toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 1500);\n            }\n            function scrollLog() { logEl.scrollTop = logEl.scrollHeight; }\n\n            function currentState() {\n                if (state.violation >= 3 || state.boundary < 40) return 'cold';\n                if (state.fav > 70 && state.trust > 60 && state.boundary > 70) return 'hot';\n                if (state.fav > 25 && state.trust > 20) return 'warm';\n                return 'warm';\n            }\n            function applyState() { body.dataset.state = currentState(); }\n\n            function updateUI() {\n                $('v-fav').textContent = state.fav;\n                $('v-trust').textContent = state.trust;\n                $('v-boundary').textContent = state.boundary;\n                $('fill-fav').style.width = clamp(state.fav, 0, 100) + '%';\n                $('fill-trust').style.width = clamp(state.trust, 0, 100) + '%';\n                $('fill-boundary').style.width = clamp(state.boundary, 0, 100) + '%';\n                document.querySelectorAll('#violation-dots .violation-dot').forEach((dot, i) => {\n                    dot.classList.toggle('filled', i < state.violation);\n                });\n                document.querySelectorAll('#ledger-dots .ledger-dot').forEach((dot, i) => {\n                    dot.classList.toggle('filled', i < state.ledger);\n                });\n                applyState();\n            }\n\n            function showScreen(screen) {\n                [screenStart, screenGame, screenEnd, screenPrologue].forEach(s => s.classList.remove('active'));\n                screen.classList.add('active');\n            }\n\n            function saveGame(manual) {\n                try {\n                    localStorage.setItem(SAVE_KEY, JSON.stringify(state));\n                    if (manual) showToast('已存档');\n                } catch (e) { if (manual) showToast('存档失败'); }\n            }\n            function loadSave() {\n                try {\n                    const raw = localStorage.getItem(SAVE_KEY);\n                    if (!raw) { showToast('没有存档'); return false; }\n                    const d = JSON.parse(raw);\n                    state = { ...state, ...d };\n                    showScreen(screenGame);\n                    updateUI();\n                    playScene(state.sceneId);\n                    return true;\n                } catch (e) { showToast('存档已损坏'); return false; }\n            }\n            function clearSave() { try { localStorage.removeItem(SAVE_KEY); } catch (e) {} }\n            function hasSave() { try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; } }\n\n            /* =========================================================\n               打 字 机 与 消 息 渲 染\n               ========================================================= */\n            function createMessageElement(msg) {\n                const div = document.createElement('div');\n                div.className = 'message';\n                const isYzb = (msg.type === 'yzb');\n                const isPlayer = (msg.type === 'player');\n                const isNarr = (msg.type === 'narrator');\n                if (isYzb) div.classList.add('speaker-yzb');\n                if (isPlayer) div.classList.add('speaker-player');\n                if (isNarr) div.classList.add('speaker-narrator');\n\n                const speaker = document.createElement('div');\n                speaker.className = 'msg-speaker';\n                if (isYzb) speaker.textContent = '衡温者';\n                else if (isPlayer) { speaker.textContent = state.name; speaker.classList.add('player'); }\n                else { speaker.textContent = '· 旁白 ·'; speaker.classList.add('narrator'); }\n                div.appendChild(speaker);\n\n                const text = document.createElement('div');\n                text.className = 'msg-text';\n                if (isNarr) text.classList.add('narrator');\n                if (isPlayer) text.classList.add('player');\n                text.textContent = '';\n                div.appendChild(text);\n                logEl.appendChild(div);\n                scrollLog();\n                return { div, textEl: text, msg };\n            }\n\n            async function typeOut(element, fullText, myToken) {\n                let index = 0;\n                skipFlag = false;\n                while (index < fullText.length) {\n                    if (token !== myToken) return false;\n                    if (skipFlag) { element.textContent = fullText; break; }\n                    index++;\n                    element.textContent = fullText.slice(0, index);\n                    if (index % 2 === 0) scrollLog();\n                    await sleep(TYPE_SPEED);\n                }\n                element.textContent = fullText;\n                scrollLog();\n                return true;\n            }\n\n            async function playMessages(messages, myToken) {\n                for (const msg of messages) {\n                    if (token !== myToken) return false;\n                    const { textEl, msg: m } = createMessageElement(msg);\n                    const ok = await typeOut(textEl, withName(m.text), myToken);\n                    if (!ok) return false;\n                    await sleep(120);\n                }\n                return true;\n            }\n\n            /* =========================================================\n               场 景 流 程\n               ========================================================= */\n            async function playScene(sceneId) {\n                const myToken = ++token;\n                const scene = SCENES[sceneId];\n                if (!scene) { showEnding(); return; }\n\n                currentScene = scene;\n                state.sceneId = sceneId;\n                state.scenePhase = scene.phase;\n                if (!state.visitedScenes.includes(sceneId)) state.visitedScenes.push(sceneId);\n\n                // 检查暗账崩塌\n                if (scene.phase >= 3 && state.ledger >= 3) {\n                    await showDarkLedgerEnding(myToken);\n                    return;\n                }\n\n                busy = false;\n                logEl.innerHTML = '';\n                choicesEl.innerHTML = '';\n                updateUI();\n                saveGame(false);\n\n                const ok = await playMessages(scene.messages, myToken);\n                if (!ok || token !== myToken) return;\n\n                await sleep(300);\n                if (token !== myToken) return;\n\n                renderChoices(scene, myToken);\n            }\n\n            function renderChoices(scene, myToken) {\n                choicesEl.innerHTML = '';\n                scene.choices.forEach((choice, index) => {\n                    if (token !== myToken) return;\n                    const btn = document.createElement('button');\n                    btn.className = 'choice-btn';\n                    btn.style.animationDelay = (index * 80) + 'ms';\n                    btn.innerHTML = `<span class=\"choice-index\">OPTION ${String(index + 1).padStart(2, '0')}</span>${withName(choice.text)}`;\n                    btn.addEventListener('click', () => handleChoice(scene, choice, index, myToken));\n                    choicesEl.appendChild(btn);\n                });\n            }\n\n            async function handleChoice(scene, choice, index, myToken) {\n                if (busy || token !== myToken) return;\n                busy = true;\n                choicesEl.innerHTML = '';\n\n                const eff = choice.effects;\n                state.fav = clamp(state.fav + (eff.fav || 0), 0, 100);\n                state.trust = clamp(state.trust + (eff.trust || 0), 0, 100);\n                state.boundary = clamp(state.boundary + (eff.boundary || 0), 0, 100);\n                state.violation = clamp(state.violation + (eff.violation || 0), 0, 3);\n                state.ledger = clamp(state.ledger + (eff.ledger || 0), 0, 3);\n                updateUI();\n\n                const playerDiv = document.createElement('div');\n                playerDiv.className = 'message speaker-player';\n                const ps = document.createElement('div');\n                ps.className = 'msg-speaker player';\n                ps.textContent = state.name;\n                const pt = document.createElement('div');\n                pt.className = 'msg-text player';\n                pt.textContent = withName(choice.text);\n                playerDiv.appendChild(ps);\n                playerDiv.appendChild(pt);\n                logEl.appendChild(playerDiv);\n                scrollLog();\n                await sleep(350);\n\n                if (token !== myToken) return;\n\n                const ok = await playMessages(choice.replies, myToken);\n                if (!ok || token !== myToken) return;\n\n                saveGame(false);\n                await sleep(500);\n                if (token !== myToken) return;\n\n                if (scene.phase >= 3 && state.ledger >= 3) {\n                    await showDarkLedgerEnding(myToken);\n                    return;\n                }\n\n                if (scene.next) {\n                    playScene(scene.next);\n                } else {\n                    showEnding();\n                }\n            }\n\n            async function showDarkLedgerEnding(myToken) {\n                busy = true;\n                logEl.innerHTML = '';\n                choicesEl.innerHTML = '';\n\n                const msgs = [\n                    { type: 'narrator', text: '他把你叫到教学楼后面的储物间门口。' },\n                    { type: 'yzb', text: '「有些事，我想了很久。还是说清楚吧。」' },\n                    { type: 'narrator', text: '他的声音很平，像在念一份早已写好的稿子。' },\n                    { type: 'yzb', text: '「之前那几次，我都没忘。我觉得，我们需要退一步。」' },\n                    { type: 'narrator', text: '他拿出一个袋子。里面是你送过他的所有东西。' },\n                    { type: 'yzb', text: '「这些都是你的。我不欠你什么了。」' },\n                    { type: 'narrator', text: '他把袋子挂在你旁边的门把手上。动作很轻。' },\n                    { type: 'yzb', text: '（低头，声音变得很轻）「我走了。你以后……不用找我了。」' }\n                ];\n\n                await playMessages(msgs, myToken);\n                await sleep(600);\n\n                const title = 'BE · 暗账崩塌';\n                const text = '他笑着退回你送的所有东西，然后从你的生活里彻底消失。没有人知道他去了哪里。你翻到社交软件，发现他改了一个签名：「温度，不是用来浪费的。」';\n                renderEnding(title, text);\n            }\n\n            function showEnding() {\n                token++;\n                busy = true;\n                const fav = state.fav;\n                const trust = state.trust;\n                const bound = state.boundary;\n                const vio = state.violation;\n\n                let title = '';\n                let text = '';\n\n                if (fav >= 80 && trust >= 70 && bound >= 60 && vio === 0) {\n                    title = '完美结局 · 恒温';\n                    text = '他说，有些人热度只有三秒，但你是恒温的。你成为了他最高权限的人。他没有说“喜欢”，但把所有的例外都给了你。';\n                } else if (bound < 40 || vio >= 3) {\n                    title = 'BE · 冷处理消失';\n                    text = '他不再主动找你。你的消息他都会回，只是越来越短：“嗯”、“在”、“哦”。你不知道自己越界了多少次，只知道，他最后的礼貌就是慢慢消失。';\n                } else if (fav >= 50 && trust >= 40) {\n                    title = '普通结局 · 平衡';\n                    text = '你们成了好朋友。很好的那种。他记得你的生日、你喜欢的咖啡、你胃疼时该买什么药。但他心里始终有一堵墙，你进不去，他也不会请人进去。';\n                } else {\n                    title = 'BE · 冷处理消失';\n                    text = '他没有拉黑你。只是从某天开始，你的消息如石沉大海。你从别人口中听说，他转去了别的学院。你这才发现，你甚至没有他的好友分组。';\n                }\n\n                renderEnding(title, text);\n            }\n\n            function renderEnding(title, text) {\n                $('end-title').textContent = title;\n                $('end-text').textContent = text;\n                $('end-stats').innerHTML = `\n                    <div class=\"end-stat\">好感度<b>${state.fav}</b></div>\n                    <div class=\"end-stat\">信任度<b>${state.trust}</b></div>\n                    <div class=\"end-stat\">底线值<b>${state.boundary}</b></div>\n                    <div class=\"end-stat\">越界<b>${state.violation}</b></div>\n                    <div class=\"end-stat\">暗账<b>${state.ledger}</b></div>\n                `;\n                clearSave();\n                showScreen(screenEnd);\n            }\n\n            /* =========================================================\n               序 章 过 渡 (修复了 Token 挂起问题)\n               ========================================================= */\n            async function playPrologue() {\n                showScreen(screenPrologue);\n                const text = '那年冬天，他的卫衣总是大一号。\\n像一层薄薄的壳，把所有的情绪都裹在里面。';\n                const el = $('prologue-text');\n                el.textContent = '';\n                el.classList.add('visible');\n                const myToken = ++token;  // 修复：这里必须递增 token\n                await sleep(800);\n                await typeOut(el, text, myToken);\n                await sleep(2500);\n                el.classList.remove('visible');\n                await sleep(900);\n            }\n\n            /* =========================================================\n               事 件 与 初 始 化\n               ========================================================= */\n            document.querySelectorAll('.gender-btn').forEach(btn => {\n                btn.addEventListener('click', () => {\n                    document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('active'));\n                    btn.classList.add('active');\n                    state.gender = btn.dataset.gender;\n                });\n            });\n\n            $('input-name').addEventListener('keydown', (e) => {\n                if (e.key === 'Enter') $('btn-start').click();\n            });\n\n            $('btn-start').addEventListener('click', () => {\n                const n = $('input-name').value.trim() || '你';\n                state.name = n;\n                state.fav = 0;\n                state.trust = 0;\n                state.boundary = 100;\n                state.violation = 0;\n                state.ledger = 0;\n                state.sceneId = 'scene_01';\n                state.visitedScenes = [];\n                updateUI();\n                \n                // 先播放序章，再进入游戏\n                playPrologue().then(() => {\n                    showScreen(screenGame);\n                    playScene('scene_01');\n                }).catch(err => {\n                    console.error('序章失败', err);\n                    showScreen(screenGame);\n                    playScene('scene_01');\n                });\n            });\n\n            $('btn-continue').addEventListener('click', () => {\n                if (loadSave()) {\n                    showToast('存档已读取');\n                }\n            });\n\n            $('btn-save').addEventListener('click', () => saveGame(true));\n            $('btn-load').addEventListener('click', () => {\n                if (hasSave()) { loadSave(); } else { showToast('没有存档'); }\n            });\n            $('btn-restart').addEventListener('click', () => {\n                if (!window.confirm('确定要重新开始吗？当前进度会丢失。')) return;\n                token++;\n                busy = false;\n                state.fav = 0;\n                state.trust = 0;\n                state.boundary = 100;\n                state.violation = 0;\n                state.ledger = 0;\n                state.sceneId = 'scene_01';\n                state.visitedScenes = [];\n                clearSave();\n                updateUI();\n                logEl.innerHTML = '';\n                choicesEl.innerHTML = '';\n                showScreen(screenStart);\n            });\n            $('btn-again').addEventListener('click', () => {\n                token++;\n                busy = false;\n                state.fav = 0;\n                state.trust = 0;\n                state.boundary = 100;\n                state.violation = 0;\n                state.ledger = 0;\n                state.sceneId = 'scene_01';\n                state.visitedScenes = [];\n                clearSave();\n                updateUI();\n                showScreen(screenStart);\n            });\n\n            logEl.addEventListener('click', () => { skipFlag = true; });\n\n            // 初始化显示\n            updateUI();\n            if (hasSave()) { $('btn-continue').style.display = 'block'; }\n            \n            // 修复：打开网页时默认显示开始界面\n            showScreen(screenStart); \n        })();\n    <\/script>\n</body>\n</html>";
+  var yzwBack = document.getElementById('yzw-back');
+  yzwBack.addEventListener('click', function () { window.backToLobby(); });
+
+  
+
+  function openGame(key) {
+    var root = roots[key];
+    if (!root) return;
+    lobby.classList.remove('on');
+    root.classList.add('on');
+    if (key === 'yzw') yzwBack.classList.add('on');
+    if (window.__GAMES[key] && window.__GAMES[key].enter) {
+      window.__GAMES[key].enter();
+    }
+  }
+
+  window.backToLobby = function () {
+    Object.keys(roots).forEach(function (key) {
+      var root = roots[key];
+      if (root.classList.contains('on')) {
+        if (window.__GAMES[key] && window.__GAMES[key].leave) {
+          window.__GAMES[key].leave();
+        }
+        root.classList.remove('on');
+      }
+    });
+    lobby.classList.add('on');
+    yzwBack.classList.remove('on');
+    lobby.scrollTop = 0;
+  };
+
+  document.querySelectorAll('.char-card').forEach(function (card) {
+    card.addEventListener('click', function () {
+      openGame(card.getAttribute('data-game'));
+    });
+  });
+
+  /* 防止移动端双击缩放 */
+  document.addEventListener('dblclick', function (e) { e.preventDefault(); }, { passive: false });
+})();
+
+
+/* ==================================================================
+   游戏 A：姚智博（高冷正太线）—— 存档前缀 yaozhiguo_
+   ================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------------- 剧情数据 ---------------- */
+  var SCENES = {
+
+    s1: {
+      next: 's2',
+      messages: [
+        { who: '', text: '转学第一天，你被安排在靠窗的最后一排。' },
+        { who: '', text: '旁边的座位趴着一个人。黑色碎发垂在额前，白色卫衣的袖子长出一截，几乎盖住了指尖。' },
+        { who: '', text: '你轻轻拉开椅子。他的睫毛颤了颤，没有睁眼。' },
+        { who: '姚智博', text: '「……」' },
+        { who: '', text: '他侧过脸，把脸埋进臂弯里。你看见他一小截耳尖，在午后的光里慢慢红了。' }
+      ],
+      choices: [
+        {
+          text: '「你好，我叫{name}，以后请多指教。」',
+          fav: 6, dep: 5, cool: -3,
+          replies: [
+            { who: '', text: '过了很久，他才抬起头。眼睛是很浅的黑色，看人的时候像隔着一层玻璃。' },
+            { who: '姚智博', text: '「姚智博。」' },
+            { who: '', text: '他顿了两秒，又补了一句。' },
+            { who: '姚智博', text: '「……记住了。」' },
+            { who: '', text: '他把脸重新埋回臂弯。你听见卫衣布料里传来一句更轻的补充。' },
+            { who: '姚智博', text: '「……{name}。」' }
+          ]
+        },
+        {
+          text: '安静地坐下，不去打扰他。',
+          fav: 2, dep: 2, cool: -1,
+          replies: [
+            { who: '', text: '一节课过去了。下课铃响的时候，一张折好的纸条被推到你桌角。' },
+            { who: '', text: '上面是三个字——「你的笔。」' },
+            { who: '', text: '你低头，发现早上掉的那支笔不知什么时候被捡了起来，连笔帽都旋好了。' }
+          ]
+        },
+        {
+          text: '「你长得好可爱啊。」',
+          fav: 5, dep: 3, cool: -6,
+          replies: [
+            { who: '', text: '他的动作停住了。' },
+            { who: '', text: '下一秒，他把整张脸埋进卫衣领口里，只露出一双眼睛。' },
+            { who: '姚智博', text: '「……无聊。」' },
+            { who: '', text: '可他的耳朵红得像要滴血。' }
+          ]
+        }
+      ]
+    },
+
+    s2: {
+      next: 's3',
+      messages: [
+        { who: '', text: '放学时下起了雨。你站在校门口的屋檐下，翻遍了书包也没找到伞。' },
+        { who: '', text: '姚智博背着书包从教学楼里走出来，在你旁边停了一瞬。' },
+        { who: '姚智博', text: '「……」' },
+        { who: '', text: '他撑开伞，朝校门反方向走了两步，又停住了。' },
+        { who: '', text: '伞沿在雨里微微偏过来，恰好遮住你头顶。他自己的半边肩膀露在外面，很快就湿了一片。' }
+      ],
+      choices: [
+        {
+          text: '「你的肩膀湿了，往这边靠一点吧。」',
+          fav: 7, dep: 6, cool: -4,
+          replies: [
+            { who: '', text: '他僵硬地往你这边挪了半步，肩膀刻意和你隔开一小段距离。' },
+            { who: '姚智博', text: '「……吵。」' },
+            { who: '', text: '但伞柄上的手指握得很紧，一路都没让伞再偏回去。' }
+          ]
+        },
+        {
+          text: '接过伞，帮他举高。',
+          fav: 5, dep: 5, cool: -3,
+          replies: [
+            { who: '', text: '他愣了一下，仰头看伞，又看你。' },
+            { who: '姚智博', text: '「……你比我高。」' },
+            { who: '', text: '语气很平，但你总觉得听起来有一点不服气。' }
+          ]
+        },
+        {
+          text: '「你是不是专门在等我？」',
+          fav: 4, dep: 4, cool: -5,
+          replies: [
+            { who: '姚智博', text: '「随便站的。」' },
+            { who: '', text: '他说这句话的时候，脚步一直配合着你的速度。你慢，他就慢。' }
+          ]
+        }
+      ]
+    },
+
+    s3: {
+      next: 's4',
+      messages: [
+        { who: '', text: '晚自习结束，便利店的灯白得发亮。你在关东煮的锅前犹豫。' },
+        { who: '', text: '货架后面，姚智博拿着一盒牛奶，正要转身。' },
+        { who: '', text: '他看见你，脚步顿住。转身要走，又折了回来。' },
+        { who: '', text: '一盒热可可被放在收银台上，推到你和店员之间。' },
+        { who: '姚智博', text: '「……第二份半价。」' }
+      ],
+      choices: [
+        {
+          text: '「你怎么知道我喜欢喝热可可？」',
+          fav: 8, dep: 8, cool: -4,
+          replies: [
+            { who: '', text: '他没回答，低头撕牛奶盒的吸管包装。撕了两次都没撕开。' },
+            { who: '姚智博', text: '「……上次你买过。」' },
+            { who: '', text: '那已经是三个月前的事了。' }
+          ]
+        },
+        {
+          text: '「那我请你吃关东煮，一起吃吧。」',
+          fav: 6, dep: 7, cool: -3,
+          replies: [
+            { who: '姚智博', text: '「随便。」' },
+            { who: '', text: '他把书包放在靠窗的高脚椅上，坐下了。你们中间隔着一个座位的距离——但他没走。' }
+          ]
+        },
+        {
+          text: '「谢谢，我自己来就好。」',
+          fav: 2, dep: 2, cool: -1,
+          replies: [
+            { who: '', text: '他点了点头，把可可推回去，转身出门。' },
+            { who: '', text: '你结账的时候，店员说：「那盒可可，刚才那位同学已经付过钱啦。」' }
+          ]
+        }
+      ]
+    },
+
+    s4: {
+      next: 's5',
+      messages: [
+        { who: '', text: '午休的时候，你推开天台的门，发现这里已经有人了。' },
+        { who: '', text: '姚智博坐在栏杆边，膝盖上摊着一本素描本，铅笔在纸上走得很轻。' },
+        { who: '', text: '听见声音，他「啪」地合上本子。' },
+        { who: '姚智博', text: '「……看什么。」' },
+        { who: '', text: '你还是瞥见了。纸上是一个人的侧脸，线条很淡，画了很多遍，又被擦掉了很多遍。' }
+      ],
+      choices: [
+        {
+          text: '「画得很好看，能让我看看吗？」',
+          fav: 7, dep: 6, cool: -4,
+          replies: [
+            { who: '', text: '他沉默了很久，久到你以为他会拒绝。' },
+            { who: '', text: '然后他把本子递过来，手指还捏着一角，像随时准备收回去。' },
+            { who: '姚智博', text: '「……随便看看。很难看。」' }
+          ]
+        },
+        {
+          text: '「原来你会画画啊。」',
+          fav: 5, dep: 4, cool: -3,
+          replies: [
+            { who: '姚智博', text: '「嗯。」' },
+            { who: '', text: '他把本子塞进卫衣的大口袋里，低着头，用鞋尖磨了磨地面。' }
+          ]
+        },
+        {
+          text: '「抱歉，打扰你了。」转身准备离开。',
+          fav: 1, dep: 1, cool: 1,
+          replies: [
+            { who: '', text: '你走到门口的时候，听见身后传来很轻的一句。' },
+            { who: '姚智博', text: '「……门，不用关。」' },
+            { who: '', text: '天台的风把这句话吹得很散。' }
+          ]
+        }
+      ]
+    },
+
+    s5: {
+      next: 's6',
+      messages: [
+        { who: '', text: '文化祭前夜，教室的灯还亮着。你留下来做最后一批装饰。' },
+        { who: '', text: '时钟指向九点半。姚智博的座位早就空了。' },
+        { who: '', text: '门被推开。他拎着两瓶水走进来，把其中一瓶放在你桌上。' },
+        { who: '姚智博', text: '「……老师让我拿的。」' },
+        { who: '', text: '可是办公室这个点早就锁门了。' }
+      ],
+      choices: [
+        {
+          text: '「骗人，办公室早就锁了。」',
+          fav: 6, dep: 6, cool: -5,
+          replies: [
+            { who: '', text: '他拉开椅子坐下，拧开自己那瓶水喝了一口。' },
+            { who: '姚智博', text: '「……你很闲。」' },
+            { who: '', text: '但他一直坐到了你把最后一张纸花折完。' }
+          ]
+        },
+        {
+          text: '「谢谢你特意回来。」',
+          fav: 8, dep: 8, cool: -3,
+          replies: [
+            { who: '', text: '他喝水的动作停了一下。' },
+            { who: '姚智博', text: '「……顺路。」' },
+            { who: '', text: '他家的方向，和学校完全相反。' }
+          ]
+        },
+        {
+          text: '「你留下来帮我吧。」',
+          fav: 5, dep: 9, cool: -2,
+          replies: [
+            { who: '姚智博', text: '「麻烦。」' },
+            { who: '', text: '他嘴上这么说，人已经走到你旁边，把袖子挽到了手肘。' }
+          ]
+        }
+      ]
+    },
+
+    s6: {
+      next: 's7',
+      messages: [
+        { who: '', text: '第二天你发烧没去学校。傍晚，门铃响了。' },
+        { who: '', text: '姚智博站在门口，帽檐压得很低，几乎遮住眼睛。手里拎着一个塑料袋。' },
+        { who: '', text: '里面装着退烧药、一小锅粥，还有一支体温计。' },
+        { who: '姚智博', text: '「……路过。」' }
+      ],
+      choices: [
+        {
+          text: '「你家在城西，我家在城东，怎么路过？」',
+          fav: 8, dep: 7, cool: -5,
+          replies: [
+            { who: '', text: '他把袋子往你手里一塞，转身要走。' },
+            { who: '姚智博', text: '「……啰嗦。」' },
+            { who: '', text: '但他走得很慢，慢到在楼梯口停了两次。' }
+          ]
+        },
+        {
+          text: '拉住他的袖子：「进来坐一会儿吧。」',
+          fav: 7, dep: 9, cool: -4,
+          replies: [
+            { who: '', text: '他僵在原地，低头看你抓着他袖子的手。' },
+            { who: '姚智博', text: '「……会传染。」' },
+            { who: '', text: '他还是进来了。坐在离床最远的那张椅子上，安安静静地看着你把粥喝完。' }
+          ]
+        },
+        {
+          text: '「谢谢你，我自己可以的。」',
+          fav: 2, dep: 3, cool: -1,
+          replies: [
+            { who: '姚智博', text: '「哦。」' },
+            { who: '', text: '他走了。半小时后，你收到一条短信，只有两个字。' },
+            { who: '姚智博', text: '「吃药。」' },
+            { who: '', text: '这是他第一次主动给你发消息。' }
+          ]
+        }
+      ]
+    },
+
+    s7: {
+      next: 's8',
+      messages: [
+        { who: '', text: '图书馆靠窗的位置，你摊开卷子，在一道题上卡了十分钟。' },
+        { who: '', text: '对面的椅子被拉开。姚智博坐下，摊开一本和他现在年级完全无关的书。' },
+        { who: '', text: '又过了五分钟，一张草稿纸从对面推过来。' },
+        { who: '', text: '上面是完整的解题步骤，字迹很小，很工整。末尾还有一行：「这题很无聊。」' },
+        { who: '', text: '他低着头看书。书的封面朝下——完全拿倒了。' }
+      ],
+      choices: [
+        {
+          text: '「你的书拿倒了哦。」',
+          fav: 6, dep: 5, cool: -5,
+          replies: [
+            { who: '', text: '他翻书的动作卡住了。' },
+            { who: '姚智博', text: '「……我在看表格。」' },
+            { who: '', text: '他把书合上，压在胳膊底下，不再说话了。但耳尖的颜色出卖了他。' }
+          ]
+        },
+        {
+          text: '「谢谢你，智博。」',
+          fav: 7, dep: 7, cool: -4,
+          replies: [
+            { who: '', text: '他没有抬头。' },
+            { who: '姚智博', text: '「……嗯。」' },
+            { who: '', text: '但他在草稿纸的角落，又补画了一个很小的箭头，指着下一道题。' }
+          ]
+        },
+        {
+          text: '安静地收下草稿纸，继续做题。',
+          fav: 4, dep: 3, cool: -2,
+          replies: [
+            { who: '', text: '你们对坐到闭馆。' },
+            { who: '', text: '收拾东西的时候，你发现草稿纸背面还有一行更小的字。' },
+            { who: '姚智博', text: '「明天这个位置，我占。」' }
+          ]
+        }
+      ]
+    },
+
+    s8: {
+      next: 's9',
+      messages: [
+        { who: '', text: '夏日祭的晚上，人潮像水一样流动。你被推着向前走，一不留神就失去了方向。' },
+        { who: '', text: '有人从后面攥住了你的手腕。' },
+        { who: '', text: '姚智博站在人群里，卫衣帽子戴在头上，只露出一双眼睛。烟花在他身后炸开。' },
+        { who: '姚智博', text: '「……人多。别走丢。」' },
+        { who: '', text: '他说完这句话，手却没有松开。' }
+      ],
+      choices: [
+        {
+          text: '反手握住他的手。',
+          fav: 9, dep: 10, cool: -6,
+          replies: [
+            { who: '', text: '他的手指猛地一缩，然后非常缓慢地，重新扣住了你。' },
+            { who: '姚智博', text: '「……热。」' },
+            { who: '', text: '可是他握得更紧了，一路握到烟花散场。' }
+          ]
+        },
+        {
+          text: '「你是特意来找我的？」',
+          fav: 7, dep: 6, cool: -5,
+          replies: [
+            { who: '', text: '他仰头看你，帽檐下的眼睛被烟花映得很亮。' },
+            { who: '姚智博', text: '「……碰巧。」' },
+            { who: '', text: '可他从进场开始，就在你刚才站的那个摊位前等了四十分钟。' }
+          ]
+        },
+        {
+          text: '「谢谢，我跟着你走。」',
+          fav: 5, dep: 4, cool: -2,
+          replies: [
+            { who: '姚智博', text: '「嗯。」' },
+            { who: '', text: '他走在前面，手一直向后伸着，没有收回。直到你不得不把它握住。' }
+          ]
+        }
+      ]
+    },
+
+    s9: {
+      next: 's10',
+      messages: [
+        { who: '', text: '连续三天，姚智博没有和你说过一句话。' },
+        { who: '', text: '第四天，你在走廊上叫住他。他停下来，没有回头。' },
+        { who: '姚智博', text: '「……你最近很忙吧。」' },
+        { who: '', text: '他的声音很轻，听不出情绪。' },
+        { who: '姚智博', text: '「和别人一起走的时候。」' }
+      ],
+      choices: [
+        {
+          text: '「你在意这个？」',
+          fav: 7, dep: 7, cool: -5,
+          replies: [
+            { who: '', text: '他转过头看你，表情还是那么平。' },
+            { who: '姚智博', text: '「……不在意。」' },
+            { who: '', text: '然后他把卫衣的帽子拉起来，遮住了大半张脸。' }
+          ]
+        },
+        {
+          text: '「那是我亲戚，来学校接我。我解释给你听。」',
+          fav: 9, dep: 8, cool: -3,
+          replies: [
+            { who: '', text: '走廊上安静了很久。' },
+            { who: '姚智博', text: '「……哦。」' },
+            { who: '', text: '他把帽子放下来，露出那双有点红的眼睛。' },
+            { who: '姚智博', text: '「……下次，先说一声。」' }
+          ]
+        },
+        {
+          text: '「对不起，我没注意到。」',
+          fav: 6, dep: 5, cool: -2,
+          replies: [
+            { who: '', text: '他看了你一会儿。' },
+            { who: '姚智博', text: '「……不用对不起。」' },
+            { who: '', text: '那天放学，他第一次主动等你一起走。' }
+          ]
+        }
+      ]
+    },
+
+    s10: {
+      next: null,
+      messages: [
+        { who: '', text: '学期最后一天。姚智博的桌上放着一个空的纸箱。' },
+        { who: '', text: '他站在窗边，背对着你，卫衣的领口立起来，遮住半张脸。' },
+        { who: '姚智博', text: '「……我家下个月搬去南方。转学手续已经交了。」' },
+        { who: '', text: '他沉默了很久，才转过头来看你。眼睛很亮，但一点表情都没有。' },
+        { who: '姚智博', text: '「你有话要说吗。」' }
+      ],
+      choices: [
+        {
+          text: '「别走。我想要你留下来。」',
+          fav: 12, dep: 10, cool: -6,
+          replies: [
+            { who: '', text: '他没有动。' },
+            { who: '', text: '过了很久，久到窗外的下课铃响完了一整遍。' },
+            { who: '姚智博', text: '「……你这个人，真的很麻烦。」' },
+            { who: '', text: '他低下头，把脸埋进卫衣领口里，声音闷闷的。' },
+            { who: '姚智博', text: '「……那我不走了。」' }
+          ]
+        },
+        {
+          text: '「不管你搬去哪里，我都会找到你。」',
+          fav: 10, dep: 8, cool: -4,
+          replies: [
+            { who: '', text: '他从纸箱里抽出一张便签，写了些什么，折好，塞进你手里。' },
+            { who: '姚智博', text: '「……别弄丢了。」' },
+            { who: '', text: '上面是一串地址，和一串手机号。字迹比草稿纸上的还要小。' }
+          ]
+        },
+        {
+          text: '「祝你一切顺利。」',
+          fav: 1, dep: 1, cool: -1,
+          replies: [
+            { who: '姚智博', text: '「嗯。」' },
+            { who: '', text: '他把纸箱抱起来，从你身边走过去。' },
+            { who: '', text: '脚步声在走廊里越来越远，没有停。' }
+          ]
+        }
+      ]
+    }
+  };
+
+  /* ---------------- 常量 / 状态 ---------------- */
+  var SAVE_KEY = 'yaozhiguo_save_v1';
+  var TYPE_SPEED = 24;
+
+  var state = null;
+  var token = 0;
+  var skipFlag = false;
+  var busy = false;
+  var gender = '其他';
+  var toastTimer = null;
+
+  var el = function (id) { return document.getElementById('yzg-' + id); };
+  var screenStart = el('screen-start');
+  var screenGame  = el('screen-game');
+  var screenEnd   = el('screen-end');
+  var logEl       = el('log');
+  var choicesEl   = el('choices');
+
+  /* ---------------- 工具 ---------------- */
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+  function fillName(t) { return String(t).replace(/\{name\}/g, state ? state.name : '你'); }
+
+  function showScreen(s) {
+    [screenStart, screenGame, screenEnd].forEach(function (n) { n.classList.remove('active'); });
+    s.classList.add('active');
+  }
+
+  function toast(msg) {
+    var t = el('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 1500);
+  }
+
+  function scrollBottom() { logEl.scrollTop = logEl.scrollHeight; }
+
+  /* ---------------- 数值 ---------------- */
+  function renderStats() {
+    if (!state) return;
+    el('v-fav').textContent  = state.fav;
+    el('v-dep').textContent  = state.dep;
+    el('v-cool').textContent = state.cool;
+    el('fill-fav').style.width  = clamp(state.fav, 0, 100) + '%';
+    el('fill-dep').style.width  = clamp(state.dep, 0, 100) + '%';
+    el('fill-cool').style.width = clamp(state.cool, 0, 100) + '%';
+  }
+
+  /* ---------------- 打字机 ---------------- */
+  function typeMessage(msg, myToken) {
+    return new Promise(function (resolve) {
+      var wrap = document.createElement('div');
+      wrap.className = 'yzg-msg ' + (msg.who ? 'yzg-msg-dialog' : 'yzg-msg-narration');
+
+      if (msg.who) {
+        var s = document.createElement('div');
+        s.className = 'yzg-speaker';
+        s.textContent = msg.who;
+        wrap.appendChild(s);
+      }
+      var p = document.createElement('p');
+      p.className = 'yzg-line';
+      wrap.appendChild(p);
+
+      logEl.appendChild(wrap);
+      scrollBottom();
+
+      var full = fillName(msg.text);
+      var i = 0;
+      skipFlag = false;
+
+      function step() {
+        if (myToken !== token) { resolve(false); return; }
+
+        if (skipFlag) {
+          p.textContent = full;
+          scrollBottom();
+          resolve(true);
+          return;
+        }
+
+        if (i >= full.length) { resolve(true); return; }
+
+        i++;
+        p.textContent = full.slice(0, i);
+
+        if (i % 3 === 0) scrollBottom();
+
+        setTimeout(step, TYPE_SPEED);
+      }
+      step();
+    });
+  }
+
+  function appendPlayerLine(text) {
+    var wrap = document.createElement('div');
+    wrap.className = 'yzg-msg yzg-msg-player';
+    var s = document.createElement('div');
+    s.className = 'yzg-speaker yzg-speaker-player';
+    s.textContent = state.name;
+    var p = document.createElement('p');
+    p.className = 'yzg-line';
+    p.textContent = text;
+    wrap.appendChild(s);
+    wrap.appendChild(p);
+    logEl.appendChild(wrap);
+    scrollBottom();
+  }
+
+  /* ---------------- 流程 ---------------- */
+  function newState(name, g) {
+    return { name: name, gender: g, fav: 0, dep: 0, cool: 60, scene: 's1' };
+  }
+
+  function startGame(name, g) {
+    state = newState(name, g);
+    token++;
+    logEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+    renderStats();
+    showScreen(screenGame);
+    playScene('s1');
+  }
+
+  async function playScene(sceneId) {
+    var myToken = ++token;
+    var scene = SCENES[sceneId];
+    if (!scene) { showEnding(); return; }
+
+    state.scene = sceneId;
+    busy = false;
+    choicesEl.innerHTML = '';
+    logEl.innerHTML = '';
+    renderStats();
+    saveGame(false);
+
+    for (var i = 0; i < scene.messages.length; i++) {
+      var ok = await typeMessage(scene.messages[i], myToken);
+      if (!ok || myToken !== token) return;
+      await sleep(160);
+      if (myToken !== token) return;
+    }
+
+    await sleep(180);
+    if (myToken !== token) return;
+
+    renderChoices(scene, myToken);
+  }
+
+  function renderChoices(scene, myToken) {
+    choicesEl.innerHTML = '';
+    scene.choices.forEach(function (c, i) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'yzg-choice';
+      b.style.animationDelay = (i * 70) + 'ms';
+      b.textContent = fillName(c.text);
+      b.addEventListener('click', function () { pickChoice(scene, c, myToken); });
+      choicesEl.appendChild(b);
+    });
+    setTimeout(scrollBottom, 60);
+  }
+
+  async function pickChoice(scene, choice, myToken) {
+    if (busy) return;
+    if (myToken !== token) return;
+    busy = true;
+
+    choicesEl.innerHTML = '';
+    appendPlayerLine(fillName(choice.text));
+
+    state.fav  = clamp(state.fav  + (choice.fav  || 0), 0, 100);
+    state.dep  = clamp(state.dep  + (choice.dep  || 0), 0, 100);
+    state.cool = clamp(state.cool + (choice.cool || 0), 0, 100);
+    renderStats();
+
+    await sleep(320);
+    if (myToken !== token) return;
+
+    for (var i = 0; i < choice.replies.length; i++) {
+      var ok = await typeMessage(choice.replies[i], myToken);
+      if (!ok || myToken !== token) return;
+      await sleep(150);
+      if (myToken !== token) return;
+    }
+
+    saveGame(false);
+
+    await sleep(520);
+    if (myToken !== token) return;
+
+    if (scene.next) { playScene(scene.next); }
+    else { showEnding(); }
+  }
+
+  /* ---------------- 结局 ---------------- */
+  function showEnding() {
+    token++;
+    busy = true;
+
+    var fav = state.fav;
+    var dep = state.dep;
+    var cool = state.cool;
+
+    var title = '';
+    var html = '';
+    var honorific = state.gender === '男' ? '哥哥' : '姐姐';
+
+    if (fav >= 70 && dep >= 60) {
+      title = '恋人结局 · 他终于叫了你的名字';
+      html =
+        '<p>一个月后，南方的搬家计划被取消了。</p>' +
+        '<p>高三的最后一个春天，姚智博的座位还在你旁边。</p>' +
+        '<p>「……喂。」</p>' +
+        '<p>他把脸埋在卫衣领口里，只露出一双眼睛，声音闷得像从很远的地方传过来。</p>' +
+        '<p>「……' + honorific + '。」</p>' +
+        '<p>你愣住了。这是他第一次这样叫你。</p>' +
+        '<p>「……不许笑。」</p>' +
+        '<p>他把头轻轻靠在你肩膀上，很轻，像怕被发现一样。</p>' +
+        '<p>「……以后也别走。」</p>' +
+        '<p>窗外的樱花开得正好。他终于承认，他要的不只是一个邻座。</p>';
+    } else if (fav >= 40) {
+      title = '弟弟结局 · 唯一信任的家人';
+      html =
+        '<p>姚智博没有转学。</p>' +
+        '<p>他还是那副面无表情的样子，还是惜字如金，还是会在你说话的时候把脸埋进领口里。</p>' +
+        '<p>但他会在你忘记带伞的每个雨天，站在校门口；会在你熬夜复习的每个晚上，把热可可放在你桌上。</p>' +
+        '<p>「……别多想。」</p>' +
+        '<p>他顿了一下。</p>' +
+        '<p>「……家人不都这样。」</p>' +
+        '<p>你成了他唯一信任的人。这样也很好。</p>';
+    } else {
+      title = '路人结局 · 没有名字的过客';
+      html =
+        '<p>姚智博转学去了南方。</p>' +
+        '<p>他的座位空了。桌肚里什么都没有留下，干净得像从来没有人坐过。</p>' +
+        '<p>很多年以后，你在直播平台上刷到一个弹幕很少的小主播。</p>' +
+        '<p>黑发，白色卫衣，话很少。有人问他为什么不换个热闹点的风格。</p>' +
+        '<p>「……懒得。」</p>' +
+        '<p>你看了很久，最后关掉了页面。</p>' +
+        '<p>你只是他生命里，一个没有名字的路过。</p>';
+    }
+
+    el('end-title').textContent = title;
+    el('end-text').innerHTML = html;
+    el('end-stats').innerHTML =
+      '<div class="yzg-end-stat">好感度<b>' + fav + '</b></div>' +
+      '<div class="yzg-end-stat">依赖度<b>' + dep + '</b></div>' +
+      '<div class="yzg-end-stat">高冷值<b>' + cool + '</b></div>';
+
+    clearSave();
+    refreshContinue();
+    showScreen(screenEnd);
+  }
+
+  /* ---------------- 存档（独立前缀） ---------------- */
+  function saveGame(manual) {
+    if (!state) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      if (manual) toast('已存档');
+    } catch (e) {
+      if (manual) toast('存档失败');
+    }
+  }
+
+  function hasSave() {
+    try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+  }
+
+  function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  }
+
+  function refreshContinue() {
+    el('btn-continue').style.display = hasSave() ? 'block' : 'none';
+  }
+
+  function loadGame() {
+    var raw = null;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) {}
+    if (!raw) { toast('没有找到存档'); return; }
+
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { toast('存档已损坏'); return; }
+    if (!d || !d.scene || !SCENES[d.scene]) { toast('存档已损坏'); return; }
+
+    state = {
+      name: d.name || '你',
+      gender: d.gender || '其他',
+      fav: typeof d.fav === 'number' ? d.fav : 0,
+      dep: typeof d.dep === 'number' ? d.dep : 0,
+      cool: typeof d.cool === 'number' ? d.cool : 60,
+      scene: d.scene
+    };
+
+    showScreen(screenGame);
+    renderStats();
+    playScene(state.scene);
+    toast('已读档');
+  }
+
+  function resetToStart() {
+    token++;
+    busy = false;
+    state = null;
+    logEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+    el('input-name').value = '';
+    showScreen(screenStart);
+    refreshContinue();
+  }
+
+  /* ---------------- 事件绑定 ---------------- */
+  document.querySelectorAll('#yzg .yzg-gender-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('#yzg .yzg-gender-btn').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      gender = b.dataset.g;
+    });
+  });
+
+  el('btn-start').addEventListener('click', function () {
+    var n = el('input-name').value.trim() || '你';
+    startGame(n, gender);
+  });
+
+  el('input-name').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') el('btn-start').click();
+  });
+
+  el('btn-continue').addEventListener('click', loadGame);
+
+  el('btn-save').addEventListener('click', function () {
+    if (!state) return;
+    saveGame(true);
+  });
+
+  el('btn-load').addEventListener('click', function () {
+    if (!hasSave()) { toast('没有找到存档'); return; }
+    loadGame();
+  });
+
+  el('btn-restart').addEventListener('click', function () {
+    if (!window.confirm('确定要重新开始吗？当前进度会丢失。')) return;
+    clearSave();
+    resetToStart();
+  });
+
+  el('btn-again').addEventListener('click', function () {
+    resetToStart();
+  });
+
+  el('btn-lobby').addEventListener('click', function () {
+    if (state && !window.confirm('返回选角大厅？当前进度已自动保存。')) return;
+    window.backToLobby();
+  });
+
+  /* 点击对话区跳过打字 */
+  logEl.addEventListener('click', function () { skipFlag = true; });
+
+  /* ---------------- 对外接口 ---------------- */
+  window.__GAMES.yzg = {
+    enter: function () {
+      token++;
+      busy = false;
+      state = null;
+      logEl.innerHTML = '';
+      choicesEl.innerHTML = '';
+      el('input-name').value = '';
+      showScreen(screenStart);
+      refreshContinue();
+    },
+    leave: function () {
+      token++;
+      busy = false;
+    }
+  };
+
+  /* ---------------- 初始化 ---------------- */
+  refreshContinue();
+
+})();
+
+
+/* ==================================================================
+   游戏 B：姚智博（傲娇学长线）—— 存档前缀 yaozhibo_
+   ================================================================== */
+(function () {
+  'use strict';
+
+  /* ===================== 剧情数据 ===================== */
+  var DATA = {
+    "game": "攻略姚智博",
+    "version": "1.0",
+    "initial_stats": { "affection": 0, "tsundere": 40, "trust": 5 },
+    "scenes": [
+      {
+        "id": "scene_01",
+        "title": "初遇·图书馆",
+        "text": "{player_name}在图书馆找书时，不小心撞上姚智博。书本散落一地，他皱眉说：“走路不看路？”却先蹲下帮你捡。",
+        "tsundere_exposure": "他把一本绝版参考书塞给你，别开脸：“我只是嫌你挡路，不是特意帮你找。”",
+        "choices": ["c01_1", "c01_2", "c01_3"]
+      },
+      {
+        "id": "scene_02",
+        "title": "食堂拼桌",
+        "text": "{player_name}端着餐盘在食堂找位。姚智博独占一桌，看见你后把包挪开：“别挡别人。”桌上却多出一份甜品。",
+        "tsundere_exposure": "他把你餐盘里的香菜夹走，嘴硬：“我只是不想看你浪费粮食。”",
+        "choices": ["c02_1", "c02_2", "c02_3"]
+      },
+      {
+        "id": "scene_03",
+        "title": "雨天伞",
+        "text": "放学时下雨，{player_name}没带伞。姚智博撑伞经过，脚步慢下来。",
+        "tsundere_exposure": "他把伞往你这边倾，自己肩膀湿透，还说：“靠近点，淋湿了别怪我。”",
+        "choices": ["c03_1", "c03_2", "c03_3"]
+      },
+      {
+        "id": "scene_04",
+        "title": "社团解围",
+        "text": "社团活动出了失误，有人把责任推给{player_name}。姚智博路过，冷冷开口。",
+        "tsundere_exposure": "他拿出记录本证明你没错，却说：“我只是讨厌有人在我面前撒谎。”",
+        "choices": ["c04_1", "c04_2", "c04_3"]
+      },
+      {
+        "id": "scene_05",
+        "title": "深夜直播",
+        "text": "{player_name}点进姚智博的直播，他正在打游戏。弹幕问有没有喜欢的人，他瞥见你的ID，手一抖。",
+        "tsundere_exposure": "他嘴上说“别乱猜，没有”，却把下一局双排位留给你的ID，还假装是随机匹配。",
+        "choices": ["c05_1", "c05_2", "c05_3"]
+      },
+      {
+        "id": "scene_06",
+        "title": "生病照顾",
+        "text": "{player_name}发烧请假，手机响起。姚智博语气不耐：“你死了吗？作业还要不要。”",
+        "tsundere_exposure": "十分钟后他出现在宿舍门口，拎着药和粥，嘴硬：“路过，顺便。别多想。”",
+        "choices": ["c06_1", "c06_2", "c06_3"]
+      },
+      {
+        "id": "scene_07",
+        "title": "校园祭烟花",
+        "text": "校园祭烟花大会，{player_name}约姚智博。他说“幼稚”，但当晚准时出现在约定地点。",
+        "tsundere_exposure": "他买了两个棉花糖，把大的给你，说：“买一送一，不是特意挑的。”",
+        "choices": ["c07_1", "c07_2", "c07_3"]
+      },
+      {
+        "id": "scene_08",
+        "title": "误会冷战",
+        "text": "有人传{player_name}和别人暧昧。姚智博一整天没理你，直播也黑脸。",
+        "tsundere_exposure": "他嘴上对弹幕说“关我什么事”，却反复切到你常玩的游戏界面。",
+        "choices": ["c08_1", "c08_2", "c08_3"]
+      },
+      {
+        "id": "scene_09",
+        "title": "天台拉走",
+        "text": "{player_name}被同学在天台表白。姚智博突然出现，抓住你的手腕就走。",
+        "tsundere_exposure": "他耳根通红：“你眼光真差。那种人……不行。”却一直没松手。",
+        "choices": ["c09_1", "c09_2", "c09_3"]
+      },
+      {
+        "id": "scene_10",
+        "title": "生日直播告白",
+        "text": "姚智博生日直播，弹幕起哄。{player_name}来到镜头外，拿着礼物。他看见你，声音卡住。",
+        "tsundere_exposure": "他关掉游戏音效，嘴上说“别搞这些”，却把镜头转向你，小声问：“你……是认真的吗？”",
+        "choices": ["c10_1", "c10_2", "c10_3"]
+      }
+    ],
+    "choices": [
+      { "id": "c01_1", "scene_id": "scene_01", "text": "“谢谢，我请你喝奶茶赔罪。”", "effect_id": "e01_1", "next_scene": "scene_02" },
+      { "id": "c01_2", "scene_id": "scene_01", "text": "“明明是你站路中间，傲娇什么？”", "effect_id": "e01_2", "next_scene": "scene_02" },
+      { "id": "c01_3", "scene_id": "scene_01", "text": "默默帮忙捡书，不多说。", "effect_id": "e01_3", "next_scene": "scene_02" },
+      { "id": "c02_1", "scene_id": "scene_02", "text": "“你怎么知道我不吃香菜？”", "effect_id": "e02_1", "next_scene": "scene_03" },
+      { "id": "c02_2", "scene_id": "scene_02", "text": "“谢谢，下次我请你吃甜品。”", "effect_id": "e02_2", "next_scene": "scene_03" },
+      { "id": "c02_3", "scene_id": "scene_02", "text": "“不会是想追我吧？”", "effect_id": "e02_3", "next_scene": "scene_03" },
+      { "id": "c03_1", "scene_id": "scene_03", "text": "“你肩膀湿了，换我撑吧。”", "effect_id": "e03_1", "next_scene": "scene_04" },
+      { "id": "c03_2", "scene_id": "scene_03", "text": "“顺路？你家不是反方向吗？”", "effect_id": "e03_2", "next_scene": "scene_04" },
+      { "id": "c03_3", "scene_id": "scene_03", "text": "靠近他，小声说谢谢。", "effect_id": "e03_3", "next_scene": "scene_04" },
+      { "id": "c04_1", "scene_id": "scene_04", "text": "“姚智博，谢谢你相信我。”", "effect_id": "e04_1", "next_scene": "scene_05" },
+      { "id": "c04_2", "scene_id": "scene_04", "text": "“你专门来帮我？”", "effect_id": "e04_2", "next_scene": "scene_05" },
+      { "id": "c04_3", "scene_id": "scene_04", "text": "“我自己能解决。”", "effect_id": "e04_3", "next_scene": "scene_05" },
+      { "id": "c05_1", "scene_id": "scene_05", "text": "发弹幕：“主播脸红了。”", "effect_id": "e05_1", "next_scene": "scene_06" },
+      { "id": "c05_2", "scene_id": "scene_05", "text": "私信：“不想说就别说，我陪你打。”", "effect_id": "e05_2", "next_scene": "scene_06" },
+      { "id": "c05_3", "scene_id": "scene_05", "text": "送一个小礼物就退出。", "effect_id": "e05_3", "next_scene": "scene_06" },
+      { "id": "c06_1", "scene_id": "scene_06", "text": "“顺便带粥带药？你好关心我。”", "effect_id": "e06_1", "next_scene": "scene_07" },
+      { "id": "c06_2", "scene_id": "scene_06", "text": "“谢谢你，进来坐会儿吧。”", "effect_id": "e06_2", "next_scene": "scene_07" },
+      { "id": "c06_3", "scene_id": "scene_06", "text": "“你是不是喜欢我？”", "effect_id": "e06_3", "next_scene": "scene_07" },
+      { "id": "c07_1", "scene_id": "scene_07", "text": "“那我们一起吃。”", "effect_id": "e07_1", "next_scene": "scene_08" },
+      { "id": "c07_2", "scene_id": "scene_07", "text": "“买一送一？小票给我看看。”", "effect_id": "e07_2", "next_scene": "scene_08" },
+      { "id": "c07_3", "scene_id": "scene_07", "text": "在烟花下偷偷牵他衣角。", "effect_id": "e07_3", "next_scene": "scene_08" },
+      { "id": "c08_1", "scene_id": "scene_08", "text": "主动解释：“我只在意你。”", "effect_id": "e08_1", "next_scene": "scene_09" },
+      { "id": "c08_2", "scene_id": "scene_08", "text": "“你吃醋了？”", "effect_id": "e08_2", "next_scene": "scene_09" },
+      { "id": "c08_3", "scene_id": "scene_08", "text": "给他空间，等他开口。", "effect_id": "e08_3", "next_scene": "scene_09" },
+      { "id": "c09_1", "scene_id": "scene_09", "text": "“那你觉得谁行？”", "effect_id": "e09_1", "next_scene": "scene_10" },
+      { "id": "c09_2", "scene_id": "scene_09", "text": "“你在吃醋吗，姚智博？”", "effect_id": "e09_2", "next_scene": "scene_10" },
+      { "id": "c09_3", "scene_id": "scene_09", "text": "“先放开我，我听听你怎么说。”", "effect_id": "e09_3", "next_scene": "scene_10" },
+      { "id": "c10_1", "scene_id": "scene_10", "text": "“姚智博，我喜欢你。不是玩笑。”", "effect_id": "e10_1", "next_scene": "ending_check" },
+      { "id": "c10_2", "scene_id": "scene_10", "text": "“你如果不喜欢，我就当没来过。”", "effect_id": "e10_2", "next_scene": "ending_check" },
+      { "id": "c10_3", "scene_id": "scene_10", "text": "“先下播，我有话单独说。”", "effect_id": "e10_3", "next_scene": "ending_check" }
+    ],
+    "effects": [
+      { "id": "e01_1", "affection": 4, "tsundere": -3, "trust": 2 },
+      { "id": "e01_2", "affection": 2, "tsundere": 5, "trust": 1 },
+      { "id": "e01_3", "affection": 3, "tsundere": -1, "trust": 3 },
+      { "id": "e02_1", "affection": 5, "tsundere": -4, "trust": 2 },
+      { "id": "e02_2", "affection": 4, "tsundere": -2, "trust": 3 },
+      { "id": "e02_3", "affection": 3, "tsundere": 6, "trust": 0 },
+      { "id": "e03_1", "affection": 5, "tsundere": -5, "trust": 4 },
+      { "id": "e03_2", "affection": 3, "tsundere": 5, "trust": 1 },
+      { "id": "e03_3", "affection": 4, "tsundere": -2, "trust": 3 },
+      { "id": "e04_1", "affection": 6, "tsundere": -4, "trust": 5 },
+      { "id": "e04_2", "affection": 4, "tsundere": 6, "trust": 2 },
+      { "id": "e04_3", "affection": 2, "tsundere": 2, "trust": 4 },
+      { "id": "e05_1", "affection": 4, "tsundere": 7, "trust": 1 },
+      { "id": "e05_2", "affection": 6, "tsundere": -5, "trust": 5 },
+      { "id": "e05_3", "affection": 3, "tsundere": 1, "trust": 2 },
+      { "id": "e06_1", "affection": 6, "tsundere": -3, "trust": 5 },
+      { "id": "e06_2", "affection": 5, "tsundere": -6, "trust": 4 },
+      { "id": "e06_3", "affection": 4, "tsundere": 8, "trust": 1 },
+      { "id": "e07_1", "affection": 5, "tsundere": -2, "trust": 3 },
+      { "id": "e07_2", "affection": 3, "tsundere": 6, "trust": 1 },
+      { "id": "e07_3", "affection": 7, "tsundere": -4, "trust": 3 },
+      { "id": "e08_1", "affection": 7, "tsundere": -5, "trust": 6 },
+      { "id": "e08_2", "affection": 4, "tsundere": 7, "trust": 2 },
+      { "id": "e08_3", "affection": 2, "tsundere": 1, "trust": 3 },
+      { "id": "e09_1", "affection": 7, "tsundere": 4, "trust": 4 },
+      { "id": "e09_2", "affection": 5, "tsundere": 8, "trust": 2 },
+      { "id": "e09_3", "affection": 4, "tsundere": -3, "trust": 6 },
+      { "id": "e10_1", "affection": 10, "tsundere": -6, "trust": 8 },
+      { "id": "e10_2", "affection": 5, "tsundere": 3, "trust": 5 },
+      { "id": "e10_3", "affection": 7, "tsundere": -2, "trust": 7 }
+    ],
+    "endings": [
+      {
+        "id": "ending_lover",
+        "name": "恋人结局",
+        "priority": 1,
+        "condition": "affection >= 60 && trust >= 45 && tsundere <= 45",
+        "text": "{player_name}，直播结束后，姚智博别过脸，把礼物盒塞回你手里：“别误会，我只是刚好也喜欢你。你要是敢反悔，我就再也不理你了。”他耳尖通红，却牵住了你的手。恋人结局。"
+      },
+      {
+        "id": "ending_friend",
+        "name": "朋友结局",
+        "priority": 2,
+        "condition": "affection >= 40 && trust >= 30",
+        "text": "姚智博嘴上说着“只是朋友”，却记得你所有偏好。你们成了彼此最信任的朋友，只是他偶尔会在直播里看着你的ID发呆。朋友结局。"
+      },
+      {
+        "id": "ending_missed",
+        "name": "错过结局",
+        "priority": 3,
+        "condition": "true",
+        "text": "姚智博依然嘴硬，依然在直播里假装不在意。可当你转身离开，他伸出的手停在半空。你们错过了。错过结局。"
+      }
+    ]
+  };
+
+  /* ===================== 常量与状态 ===================== */
+  var SAVE_KEY = 'yaozhibo_save_v1';
+  var MAX = { affection: 70, tsundere: 100, trust: 55 };
+  var TYPE_SPEED = 18;
+
+  var state = null;
+  var session = 0;
+  var skipCurrent = false;
+  var locked = false;
+  var selectedGender = '其他';
+  var toastTimer = null;
+
+  var $ = function (id) { return document.getElementById('yzb-' + id); };
+  var screens = {
+    start: $('start-screen'),
+    game: $('game-screen'),
+    ending: $('ending-screen')
+  };
+  var dialogEl = $('dialog');
+  var choicesEl = $('choices');
+  var stageEl = $('stage');
+
+  /* ===================== 工具函数 ===================== */
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function fmt(n) { return (n > 0 ? '+' : '') + n; }
+  function numOr(v, d) { return (typeof v === 'number' && isFinite(v)) ? v : d; }
+
+  function showScreen(name) {
+    Object.keys(screens).forEach(function (k) {
+      screens[k].classList.toggle('active', k === name);
+    });
+  }
+
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('show'); }, 1600);
+  }
+
+  function fill(text) {
+    return String(text)
+      .replace(/\{player_name\}/g, state ? state.name : '你')
+      .replace(/\{player_gender\}/g, state ? state.gender : '其他');
+  }
+
+  /* ===================== 打字机 ===================== */
+  async function typeText(text, cls, my) {
+    skipCurrent = false;
+    var p = document.createElement('p');
+    if (cls) p.className = cls;
+    dialogEl.appendChild(p);
+    stageEl.scrollTop = stageEl.scrollHeight;
+
+    var chars = Array.from(text);
+    for (var i = 0; i < chars.length; i++) {
+      if (my !== session) return false;
+      if (skipCurrent) { p.textContent = text; skipCurrent = false; break; }
+      p.textContent += chars[i];
+      if (i % 4 === 0) stageEl.scrollTop = stageEl.scrollHeight;
+      await sleep(TYPE_SPEED);
+    }
+    p.textContent = text;
+    stageEl.scrollTop = stageEl.scrollHeight;
+    return true;
+  }
+
+  /* ===================== 数值 ===================== */
+  function setStat(key, val, max) {
+    var numEl = $('num-' + key);
+    var barEl = $('bar-' + key);
+    if (numEl) numEl.textContent = val;
+    if (barEl) barEl.style.width = clamp((val / max) * 100, 0, 100) + '%';
+  }
+
+  function updateStats() {
+    if (!state) return;
+    setStat('affection', state.affection, MAX.affection);
+    setStat('tsundere', state.tsundere, MAX.tsundere);
+    setStat('trust', state.trust, MAX.trust);
+  }
+
+  /* ===================== 存档（独立前缀） ===================== */
+  function saveGame(manual) {
+    if (!state) return;
+    try {
+      localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+      if (manual) toast('已存档 ✓');
+    } catch (e) {
+      if (manual) toast('存档失败');
+    }
+  }
+
+  function hasSave() {
+    try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+  }
+
+  function clearSave() {
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+  }
+
+  function refreshContinue() {
+    $('continue-btn').hidden = !hasSave();
+  }
+
+  function loadGame() {
+    var raw = null;
+    try { raw = localStorage.getItem(SAVE_KEY); } catch (e) {}
+    if (!raw) { toast('没有找到存档'); return; }
+
+    var d = null;
+    try { d = JSON.parse(raw); } catch (e) { toast('存档已损坏'); return; }
+    if (!d || !d.currentScene) { toast('存档已损坏'); return; }
+
+    state = {
+      name: d.name || '你',
+      gender: d.gender || '其他',
+      affection: numOr(d.affection, DATA.initial_stats.affection),
+      tsundere: numOr(d.tsundere, DATA.initial_stats.tsundere),
+      trust: numOr(d.trust, DATA.initial_stats.trust),
+      currentScene: d.currentScene
+    };
+    locked = false;
+    showScreen('game');
+    updateStats();
+    playScene(state.currentScene);
+    toast('已读档 ✓');
+  }
+
+  /* ===================== 流程 ===================== */
+  function startGame(name, gender) {
+    state = {
+      name: name,
+      gender: gender,
+      affection: DATA.initial_stats.affection,
+      tsundere: DATA.initial_stats.tsundere,
+      trust: DATA.initial_stats.trust,
+      currentScene: DATA.scenes[0].id
+    };
+    locked = false;
+    showScreen('game');
+    updateStats();
+    playScene(state.currentScene);
+  }
+
+  async function playScene(sceneId) {
+    var my = ++session;
+    var scene = DATA.scenes.filter(function (s) { return s.id === sceneId; })[0];
+    if (!scene) { showEnding(); return; }
+
+    state.currentScene = sceneId;
+    locked = false;
+    choicesEl.innerHTML = '';
+    dialogEl.innerHTML = '';
+    $('scene-label').textContent = scene.title;
+    updateStats();
+    saveGame(false);
+    stageEl.scrollTop = 0;
+
+    await typeText(fill(scene.text), 'yzb-narration', my);
+    if (my !== session) return;
+
+    await sleep(240);
+    if (my !== session) return;
+
+    await typeText(fill(scene.tsundere_exposure), 'yzb-tsundere-line', my);
+    if (my !== session) return;
+
+    await sleep(180);
+    if (my !== session) return;
+
+    renderChoices(scene, my);
+  }
+
+  function renderChoices(scene, my) {
+    choicesEl.innerHTML = '';
+    scene.choices.forEach(function (cid, i) {
+      var c = DATA.choices.filter(function (x) { return x.id === cid; })[0];
+      if (!c) return;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'yzb-choice-btn';
+      btn.style.animationDelay = (i * 60) + 'ms';
+      btn.textContent = c.text;
+      btn.addEventListener('click', function () { handleChoice(c, my); });
+      choicesEl.appendChild(btn);
+    });
+  }
+
+  async function handleChoice(choice, my) {
+    if (locked) return;
+    if (my !== session) return;
+    locked = true;
+
+    choicesEl.innerHTML = '';
+
+    var eff = DATA.effects.filter(function (e) { return e.id === choice.effect_id; })[0] || {};
+    var dA = eff.affection || 0;
+    var dT = eff.tsundere || 0;
+    var dR = eff.trust || 0;
+
+    state.affection = clamp(state.affection + dA, 0, MAX.affection);
+    state.tsundere = clamp(state.tsundere + dT, 0, MAX.tsundere);
+    state.trust = clamp(state.trust + dR, 0, MAX.trust);
+    updateStats();
+
+    await typeText('▶ ' + choice.text, 'yzb-player-line', my);
+    if (my !== session) return;
+
+    var tips = [];
+    if (dA) tips.push('好感度 ' + fmt(dA));
+    if (dT) tips.push('傲娇值 ' + fmt(dT));
+    if (dR) tips.push('信任 ' + fmt(dR));
+    if (tips.length) {
+      await typeText(tips.join('　'), 'yzb-effect-tip', my);
+      if (my !== session) return;
+    }
+
+    await sleep(420);
+    if (my !== session) return;
+
+    if (choice.next_scene === 'ending_check') { showEnding(); }
+    else { playScene(choice.next_scene); }
+  }
+
+  /* ===================== 结局 ===================== */
+  function checkCond(cond, stats) {
+    try {
+      var fn = new Function('affection', 'tsundere', 'trust', 'return (' + cond + ');');
+      return !!fn(stats.affection, stats.tsundere, stats.trust);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function showEnding() {
+    session++;
+    var stats = { affection: state.affection, tsundere: state.tsundere, trust: state.trust };
+
+    var sorted = DATA.endings.slice().sort(function (a, b) { return a.priority - b.priority; });
+    var chosen = sorted[sorted.length - 1];
+    for (var i = 0; i < sorted.length; i++) {
+      if (checkCond(sorted[i].condition, stats)) { chosen = sorted[i]; break; }
+    }
+
+    $('ending-name').textContent = chosen.name;
+    $('ending-text').textContent = fill(chosen.text);
+    $('ending-stats').innerHTML =
+      '<div>好感度<b>' + stats.affection + '</b></div>' +
+      '<div>傲娇值<b>' + stats.tsundere + '</b></div>' +
+      '<div>信任<b>' + stats.trust + '</b></div>';
+
+    showScreen('ending');
+    clearSave();
+    refreshContinue();
+  }
+
+  /* ===================== 事件绑定 ===================== */
+  document.querySelectorAll('#yzb .yzb-gender-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('#yzb .yzb-gender-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      selectedGender = btn.dataset.gender || '其他';
+    });
+  });
+
+  $('start-btn').addEventListener('click', function () {
+    var name = $('name-input').value.trim() || '你';
+    startGame(name, selectedGender);
+  });
+
+  $('continue-btn').addEventListener('click', function () { loadGame(); });
+
+  $('save-btn').addEventListener('click', function () { saveGame(true); });
+  $('load-btn').addEventListener('click', function () { loadGame(); });
+
+  $('restart-btn').addEventListener('click', function () {
+    if (!window.confirm('确定要重新开始吗？当前进度将会丢失。')) return;
+    session++;
+    clearSave();
+    state = null;
+    refreshContinue();
+    dialogEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+    $('name-input').value = '';
+    showScreen('start');
+  });
+
+  $('ending-restart').addEventListener('click', function () {
+    session++;
+    state = null;
+    refreshContinue();
+    dialogEl.innerHTML = '';
+    choicesEl.innerHTML = '';
+    $('name-input').value = '';
+    showScreen('start');
+  });
+
+  $('lobby-btn').addEventListener('click', function () {
+    if (state && !window.confirm('返回选角大厅？当前进度已自动保存。')) return;
+    window.backToLobby();
+  });
+
+  stageEl.addEventListener('click', function () { skipCurrent = true; });
+
+  $('name-input').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { $('start-btn').click(); }
+  });
+
+  /* ===================== 对外接口 ===================== */
+  window.__GAMES.yzb = {
+    enter: function () {
+      session++;
+      locked = false;
+      state = null;
+      dialogEl.innerHTML = '';
+      choicesEl.innerHTML = '';
+      $('name-input').value = '';
+      showScreen('start');
+      refreshContinue();
+    },
+    leave: function () {
+      session++;
+      locked = false;
+    }
+  };
+
+  /* ===================== 初始化 ===================== */
+  refreshContinue();
+
+})();
+</script>
+</body>
+</html>
